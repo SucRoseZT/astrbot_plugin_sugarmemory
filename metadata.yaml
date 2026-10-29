@@ -5,4 +5,7 @@ version: 0.8.0
 author: SucRoseZT
 repo: https://github.com/SucRoseZT/astrbot_plugin_sugarmemory
 tags:
-  - astrbot
+  - memory
+  - long-term-memory
+  - context
+  - sqlite
