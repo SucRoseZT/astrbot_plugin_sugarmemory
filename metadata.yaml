@@ -3,4 +3,6 @@ display_name: "蔗糖的记忆中枢~"
 desc: 分层记忆 M1：L2 事实/L3 事件存储层强制隔离、写入门控（防记忆污染）、system_prompt 隔离注入（防指令越权）、可解释记忆包与 Token 预算、阶段总结单次 LLM 调用产出摘要+断言；v0.8.0 面板「AI 与人」——一个人 = 一个 QQ + 一串称呼，同一个人不再被外号/错名拆成两个，关系与好感挂在人身上
 version: 0.8.0
 author: SucRoseZT
-repo: local
+repo: https://github.com/SucRoseZT/astrbot_plugin_sugarmemory
+tags:
+  - astrbot
