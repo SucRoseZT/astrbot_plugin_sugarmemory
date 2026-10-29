@@ -1,0 +1,3952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蔗糖的记忆中枢~</title>
+<style>
+  :root { --line:#f3c6d8; --text:#5a3a48; --dim:#b98da0; --acc:#ff7fa9; --acc2:#ffb3cd;
+    --ok:#e8749c; --bad:#e06c5a; --warn:#d9a441; --blue:#9a8cf0; --card:#fffdfb; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { height:100%; }
+  body {
+    color:var(--text); font:14px/1.65 "Segoe UI","Microsoft YaHei",sans-serif;
+    background:linear-gradient(120deg,#ffe9f2,#fff4ea,#efeaff,#ffe6f2,#ffe9f2);
+    background-size:400% 400%; animation:bgflow 22s ease infinite; overflow:hidden;
+  }
+  @keyframes bgflow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+  .app { display:flex; flex:1; min-height:0; min-width:0; }
+
+  /* ---------- 左侧 ---------- */
+  .side { width:264px; flex:0 0 264px; display:flex; flex-direction:column; padding:18px 14px 14px;
+    background:#fffafcd9; border-right:1px solid var(--line); backdrop-filter:blur(6px); }
+  .brand { font-size:16px; font-weight:600; color:#e2568a; letter-spacing:.2px; }
+  .status { color:var(--dim); font-size:11.5px; margin:2px 0 12px; line-height:1.55; }
+  .status i { color:var(--warn); font-style:normal; }
+  .sumprog { border:1px solid var(--line); border-radius:10px; padding:9px 10px; margin:0 0 12px;
+    background:#fffdfb; font-size:11.5px; }
+  .sumprog h4 { margin:0 0 2px; font-size:11.5px; font-weight:600; color:#c94f7c; }
+  .sumprog .spnote { color:var(--dim); margin-bottom:6px; }
+  .sprow { margin-top:7px; }
+  .sprow .sptop { display:flex; justify-content:space-between; gap:8px; margin-bottom:3px; line-height:1.4; }
+  .sprow .spname { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
+  .sprow .spnum { flex:0 0 auto; color:var(--dim); }
+  .sprow .spnum b { color:#e2568a; font-weight:600; }
+  .spbar { height:4px; background:#f8e4ed; border-radius:2px; overflow:hidden; }
+  .spbar i { display:block; height:100%; background:linear-gradient(90deg,#ffb3cd,#ff7fa9); border-radius:2px; transition:width .4s; }
+  .sprow.wait .spbar i { background:linear-gradient(90deg,#ffc59b,#d9a441); }
+  .sprow.wait .spnum b { color:#d9a441; }
+  .search { width:100%; background:#fff; border:1px solid var(--line); border-radius:8px; padding:7px 11px;
+    font-size:13px; color:var(--text); outline:none; font-family:inherit; }
+  .search:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .uslist { flex:1; overflow-y:auto; margin:10px -4px 0; padding:0 4px; }
+  .usr { display:flex; gap:10px; align-items:center; padding:8px 9px; border-radius:10px; cursor:pointer;
+    transition:.14s; border:1px solid transparent; }
+  .usr:hover { background:#fff0f6; }
+  .usr.act { background:#fff0f6; border-color:var(--acc2); }
+  .av { width:30px; height:30px; flex:0 0 30px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:13px; color:#fff; background:linear-gradient(135deg,#ffa8c6,#ff8fb8); }
+  .usr:nth-child(3n+2) .av { background:linear-gradient(135deg,#bdb0ff,#a89bf5); }
+  .usr:nth-child(3n) .av { background:linear-gradient(135deg,#ffc59b,#ffab7a); }
+  .uinfo { min-width:0; flex:1; }
+  .un { font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .um { font-size:11px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .um b { color:#e2568a; font-weight:600; }
+  .sidefoot { border-top:1px solid var(--line); padding-top:9px; margin-top:6px; }
+  .navitem { display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:9px; cursor:pointer;
+    font-size:13px; color:#8d6b7a; transition:.14s; }
+  .navitem:hover { background:#fff0f6; color:#e2568a; }
+  .navitem.act { background:#fff0f6; color:#e2568a; font-weight:600; }
+  .navitem em { margin-left:auto; font-style:normal; font-size:11px; color:var(--dim); }
+  .mode { display:flex; align-items:center; gap:6px; margin-top:9px; padding:7px 9px 2px;
+    border-top:1px dashed var(--line); font-size:11.5px; color:var(--dim); line-height:1.5; }
+  .mode i { width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#cbb2bd; }
+  .mode.on { color:#e2568a; font-weight:600; }
+  .mode.on i { background:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+
+  /* ---------- 右侧 ---------- */
+  .main { flex:1; min-width:0; padding:20px 26px 10px; display:flex; flex-direction:column; overflow:hidden; }
+  .head { display:flex; align-items:center; gap:13px; margin-bottom:14px; }
+  .head .big { width:40px; height:40px; flex:0 0 40px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:17px; color:#fff; background:linear-gradient(135deg,#ffa8c6,#ff8fb8); }
+  .head h2 { font-size:17px; font-weight:600; color:#c94f7c; line-height:1.3; }
+  .head .meta { font-size:11.5px; color:var(--dim); }
+  .tools { margin-left:auto; display:flex; gap:8px; }
+  .btn { background:#fff; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 13px;
+    cursor:pointer; font-size:12.5px; font-family:inherit; transition:.15s; white-space:nowrap; }
+  .btn:hover { border-color:var(--acc); color:#e2568a; }
+  .btn.primary { background:var(--acc); border-color:var(--acc); color:#fff; }
+  .btn.primary:hover { background:#ff6a9b; color:#fff; }
+  .btn.mini { padding:3px 10px; font-size:12px; }
+  .btn.danger { color:var(--bad); border-color:#f0c4bb; background:#fff8f6; }
+  .btn.danger.arm { background:var(--bad); border-color:var(--bad); color:#fff; }
+  .btn:disabled { opacity:.6; cursor:default; }
+
+  .tabs { display:flex; gap:24px; border-bottom:1px solid var(--line); margin-bottom:13px; }
+  .tab { padding:0 2px 9px; cursor:pointer; font-size:13.5px; color:var(--dim); border-bottom:2px solid transparent;
+    margin-bottom:-1px; transition:.15s; user-select:none; }
+  .tab span { font-size:11px; opacity:.8; margin-left:5px; background:#ffe9f2; border-radius:20px; padding:1px 7px; }
+  .tab:hover { color:#e2568a; }
+  .tab.act { color:#e2568a; font-weight:600; border-bottom-color:var(--acc); }
+
+  .filterbar { display:flex; gap:9px; align-items:center; margin-bottom:11px; flex-wrap:wrap; }
+  .filterbar input[type=text], .filterbar select { background:#ffffffcc; border:1px solid var(--line);
+    color:var(--text); border-radius:8px; padding:6px 11px; outline:none; font-size:12.5px; font-family:inherit; }
+  .filterbar input[type=text] { width:230px; }
+  .filterbar input:focus, .filterbar select:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .hint { color:var(--dim); font-size:11.5px; margin-left:auto; }
+
+  .scroll { flex:1; overflow-y:auto; padding-right:4px; padding-bottom:30px; }
+  .pane { display:none; } .pane.act { display:block; }
+  .lead { color:var(--dim); font-size:12px; margin-bottom:11px; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:11px; padding:11px 14px;
+    margin-bottom:8px; display:flex; gap:13px; align-items:flex-start; transition:.15s; }
+  .card:hover { border-color:var(--acc2); }
+  .card .fact { flex:1; min-width:0; }
+  .card .t { font-size:13.5px; word-break:break-word; }
+  .card .t b { color:#c94f7c; font-weight:600; }
+  .card .t .id { color:#d9b3c2; font-size:11px; margin-left:6px; }
+  .card .m { color:var(--dim); font-size:11.5px; margin-top:3px; }
+  .card .m em { font-style:normal; color:#cc8fa8; }
+  .card .m .manual { color:#7a9bd9; }
+  .acts { display:flex; gap:6px; flex:0 0 auto; }
+  .chain { margin-top:8px; background:#fff6fa; border:1px dashed var(--acc2); border-radius:8px;
+    padding:7px 11px; font-size:11.5px; color:var(--dim); line-height:1.9; }
+  .chain b { color:#c94f7c; font-weight:600; }
+
+  .sumcard { background:var(--card); border:1px solid var(--line); border-left:3px solid var(--acc2);
+    border-radius:10px; padding:10px 14px; margin-bottom:8px; }
+  .sumcard:hover { border-color:var(--acc); border-left-color:var(--acc); }
+  .sumcard .st { display:flex; align-items:center; gap:8px; font-size:11.5px; color:#cfa9b9; margin-bottom:4px; }
+  .sumcard .st b { color:#c94f7c; font-weight:600; font-variant-numeric:tabular-nums; }
+  .sumcard .sv { font-size:13.5px; line-height:1.7; word-break:break-word; }
+  .sumcard .sm { margin-top:5px; font-size:11.5px; color:var(--dim); }
+
+  .row { background:var(--card); border:1px solid var(--line); border-radius:9px; padding:8px 12px;
+    margin-bottom:7px; display:flex; gap:10px; align-items:flex-start; font-size:13px; }
+  .row:hover { border-color:var(--acc2); }
+  .row .chip { flex:0 0 auto; font-size:11px; border-radius:6px; padding:0 7px; border:1px solid var(--line);
+    line-height:1.7; }
+  .chip.user { color:#e2568a; background:#fff0f5; border-color:#ffd0e0; }
+  .chip.ai { color:var(--blue); background:#f3f0ff; border-color:#ddd6ff; }
+  .chip.sum { color:#b57d1f; background:#fff8e8; border-color:#f3dfb0; }
+  .chip.demo { color:#8a7f9e; background:#f7f4fa; border-color:#e4dcec; }
+  .chip.note { color:#4f89a8; background:#eef8fc; border-color:#cde9f3; }
+  .chip.ob-relay { color:#2e8b57; background:#edfaf2; border-color:#bfe8cf; }
+  .chip.ob-cron { color:#4f89a8; background:#eef8fc; border-color:#cde9f3; }
+  .chip.ob-plain { color:#8a7f9e; background:#f7f4fa; border-color:#e4dcec; }
+  .chip.scope { color:#a88a97; background:#fdf5f8; border-color:#f2dbe4; }
+  .chip.deny { color:#fff; background:var(--bad); border-color:var(--bad); }
+  .chip.rewrite { color:#fff; background:var(--warn); border-color:var(--warn); }
+  .row .body { flex:1; min-width:0; word-break:break-word; }
+  .row .body .why { color:var(--warn); font-size:11.5px; margin-top:2px; }
+  .row .time { flex:0 0 auto; color:#cfa9b9; font-size:11px; padding-top:1px; }
+
+  /* ---------- 注入预览：分段切换 + 读取明细 ---------- */
+  .seg { display:flex; gap:4px; background:var(--card); border:1px solid var(--line);
+    border-radius:9px; padding:4px; margin:0 0 10px; width:max-content; }
+  .segbtn { border:0; background:transparent; color:var(--dim); font-size:12.5px; padding:5px 14px;
+    border-radius:7px; cursor:pointer; transition:.15s; }
+  .segbtn:hover { color:var(--text); }
+  .segbtn.act { background:var(--acc); color:#fff; }
+
+  #packdetail { max-height:70vh; overflow:auto; }
+  .pdsec { border:1px solid var(--line); border-radius:12px; background:var(--card); margin-bottom:10px;
+    overflow:hidden; }
+  .pdhead { display:flex; align-items:center; gap:8px; padding:9px 13px;
+    background:linear-gradient(90deg,#fff2f8,#fff9fb); }
+  .pdicon { width:22px; height:22px; flex:0 0 22px; border-radius:7px; background:var(--acc);
+    color:#fff; font-size:11.5px; display:flex; align-items:center; justify-content:center; font-weight:600; }
+  .pdhead b { font-size:13px; color:#c94f7c; font-weight:600; }
+  .pdcount { margin-left:auto; font-size:11.5px; color:var(--dim); }
+  .pdbody { padding:8px 10px 4px; }
+  .pdrow { display:flex; gap:10px; align-items:flex-start; padding:6px 4px; border-bottom:1px dashed #f3e2ea;
+    font-size:13px; }
+  .pdrow:last-child { border-bottom:0; }
+  .pdchip { flex:0 0 auto; font-size:11px; border-radius:6px; padding:0 7px; line-height:1.7;
+    color:#4f89a8; background:#eef8fc; border:1px solid #cde9f3; white-space:nowrap; }
+  .pdtxt { flex:1; min-width:0; word-break:break-word; }
+  .pdsub { color:var(--dim); font-size:11.5px; margin-top:2px; }
+
+  /* ---------- 分组：天 / 一次对话 / 一次总结 ---------- */
+  .day { margin-bottom:12px; border:1px solid var(--line); border-radius:12px; background:#fffafcd9;
+    overflow:hidden; }
+  .dayhead, .grphead { display:flex; align-items:center; gap:9px; padding:9px 13px; cursor:pointer;
+    user-select:none; transition:.15s; background:linear-gradient(90deg,#fff2f8,#fff9fb); }
+  .dayhead:hover, .grphead:hover { background:#ffeef6; }
+  .chev { width:14px; flex:0 0 14px; text-align:center; color:var(--acc); font-size:15px;
+    line-height:1.2; transition:transform .18s; }
+  .dayhead.open .chev, .grphead.open .chev, .convhead.open .chev { transform:rotate(90deg); }
+  .dayname { font-size:13.5px; font-weight:600; color:#c94f7c; }
+  .daydate { font-size:11.5px; color:var(--dim); }
+  .daymeta { margin-left:auto; font-size:11.5px; color:var(--dim); }
+  .daybody { display:none; padding:8px 10px 4px; border-top:1px solid #fbe3ec; }
+  .daybody.open { display:block; }
+
+  .conv { border:1px solid #f7dbe7; border-radius:9px; margin-bottom:7px; background:#fff; overflow:hidden; }
+  .convhead { display:flex; align-items:center; gap:8px; padding:7px 11px; cursor:pointer;
+    user-select:none; font-size:12.5px; }
+  .convhead:hover { background:#fff6fa; }
+  .convtime { font-weight:600; color:#b3648a; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .convprev { flex:1; min-width:0; color:var(--dim); white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+  .convmeta { flex:0 0 auto; color:#cfa9b9; font-size:11.5px; }
+  .convbody { display:none; padding:7px 8px 2px; border-top:1px dashed #f9dbe7; background:#fffdfe; }
+  .convbody.open { display:block; }
+  .convbody .row { margin-bottom:6px; }
+  .row.sumrow { background:#fffaf0; border-color:#f0e0bd; }
+
+  .grp { margin-bottom:10px; border:1px solid var(--line); border-radius:12px; background:#fffafcd9;
+    overflow:hidden; }
+  .grpinfo { flex:1; min-width:0; }
+  .grptitle { font-size:13px; font-weight:600; color:#c94f7c; }
+  .grpsub { font-size:11.5px; color:var(--dim); margin-top:2px; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+  .grpcount { flex:0 0 auto; font-size:11.5px; color:#cfa9b9; }
+  .grpbody { display:none; padding:8px 10px 3px; border-top:1px solid #fbe3ec; }
+  .grpbody.open { display:block; }
+
+  /* 分类视图：长期记忆按分类切换 + 分类分组 */
+  .l2view { display:flex; gap:6px; margin:8px 0 4px; flex-wrap:wrap; }
+  .l2view .vbtn { padding:3px 11px; font-size:12px; border-radius:16px; border:1px solid var(--line);
+    background:#fff; color:var(--dim); cursor:pointer; user-select:none; }
+  .l2view .vbtn.act { background:var(--acc); color:#fff; border-color:var(--acc); font-weight:600; }
+  .catgrp { margin-bottom:10px; border:1px solid var(--line); border-radius:12px; background:#fffafcd9; overflow:hidden; }
+  .cathead { display:flex; align-items:center; gap:9px; padding:9px 13px; cursor:pointer; user-select:none;
+    background:linear-gradient(90deg,#fff2f8,#fff9fb); }
+  .cathead:hover { background:#ffeef6; }
+  .catname { font-size:13.5px; font-weight:600; color:#c94f7c; }
+  .catcount { margin-left:auto; font-size:11.5px; color:#cfa9b9; }
+  .catbody { display:none; padding:8px 10px 3px; border-top:1px solid #fbe3ec; }
+  .catbody.open { display:block; }
+  .fact .t .cat-chip { font-size:10px; padding:0 6px; border-radius:10px; background:#ffe9f2; color:#c94f7c;
+    margin-right:5px; vertical-align:1px; }
+
+  /* 编辑 / 新增表单 */
+  .editor { flex:1; min-width:0; }
+  .editor label { display:block; font-size:11px; color:var(--dim); margin:6px 0 3px; }
+  .editor input, .editor textarea, .editor select { width:100%; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; font-size:13px; color:var(--text); font-family:inherit; outline:none; }
+  .editor textarea { min-height:56px; resize:vertical; }
+  .editor input:focus, .editor textarea:focus, .editor select:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .editor .line { display:flex; gap:8px; align-items:flex-end; }
+  .editor .line > div:first-child { flex:1; }
+  .editor .line .w { width:86px; flex:0 0 86px; }
+  .editor .send { display:flex; gap:7px; margin-top:10px; }
+  .addbox { background:#fff8fb; border:1px dashed var(--acc2); border-radius:11px; padding:12px 14px; margin-bottom:10px; }
+
+  .empty { color:var(--dim); text-align:center; padding:54px 0; font-size:13px; }
+  .empty small { display:block; color:#d3b3c1; font-size:12px; margin-top:6px; }
+  pre { background:#fff7fa; border:1px solid var(--line); border-radius:10px; padding:13px 15px;
+    white-space:pre-wrap; word-break:break-word; font-size:12px; font-family:inherit; color:var(--text);
+    max-height:calc(100vh - 260px); overflow:auto; line-height:1.85; }
+  textarea.big { width:100%; background:#ffffffcc; border:1px solid var(--line); color:var(--text);
+    border-radius:9px; padding:10px 13px; min-height:66px; resize:vertical; outline:none; font-family:inherit;
+    font-size:13px; }
+  textarea.big:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+
+  /* ---------- 外壳 / 模块导航 ---------- */
+  .shell { display:flex; flex-direction:column; height:100vh; }
+  .topbar { flex:0 0 48px; display:flex; align-items:center; gap:14px; padding:0 18px;
+    background:#fffafcf5; border-bottom:1px solid var(--line); backdrop-filter:blur(8px); z-index:6; }
+  .tb-left { display:flex; align-items:center; gap:9px; min-width:0; }
+  .back { width:27px; height:27px; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; color:#c94f7c; font-size:15px; background:#fff0f6;
+    border:1px solid var(--line); transition:.14s; }
+  .back:hover { background:#ffe3ee; }
+  .back.hide { display:none; }
+  #tbTitle { font-size:14px; font-weight:600; color:#c94f7c; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .tb-tabs { margin-left:auto; display:flex; gap:6px; }
+  .tbt { font-size:12.5px; color:#8d6b7a; padding:5px 13px; border-radius:999px; cursor:pointer;
+    border:1px solid transparent; transition:.14s; white-space:nowrap; }
+  .tbt:hover { background:#fff0f6; color:#e2568a; }
+  .tbt.act { background:#ffe3ee; border-color:var(--acc2); color:#c94f7c; font-weight:600; }
+
+  .view { display:none; flex:1; min-height:0; }
+  .view.act { display:flex; flex-direction:column; }
+  #home { overflow:auto; }
+  #home.act { display:block; }
+
+  /* ---------- 主界面 ---------- */
+  .homewrap { max-width:1000px; margin:0 auto; padding:52px 32px 70px; }
+  .homewrap h1 { font-size:23px; color:#c94f7c; font-weight:600; letter-spacing:.5px; }
+  .homewrap .sub { font-size:12.5px; color:var(--dim); margin-top:7px; line-height:1.9; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(214px,1fr)); gap:16px; margin-top:28px; }
+  .mcard { position:relative; background:#fffdfb; border:1px solid var(--line); border-radius:16px;
+    padding:21px 19px 18px; cursor:pointer; transition:.18s; overflow:hidden; }
+  .mcard:before { content:''; position:absolute; inset:0 0 auto 0; height:3px;
+    background:linear-gradient(90deg,#ffa8c6,#bdb0ff); opacity:.8; }
+  .mcard:hover { transform:translateY(-3px); border-color:var(--acc2); box-shadow:0 14px 30px #ff7fa926; }
+  .mcard .ic { width:35px; height:35px; border-radius:11px; display:flex; align-items:center;
+    justify-content:center; font-size:17px; background:#fff0f6; color:#e2568a; }
+  .mcard h3 { font-size:15.5px; color:#c94f7c; margin:12px 0 5px; font-weight:600; }
+  .mcard p { font-size:12px; color:var(--dim); line-height:1.75; min-height:42px; }
+  .mcard .stat { margin-top:13px; font-size:11.5px; color:#e2568a; display:flex; gap:12px;
+    flex-wrap:wrap; align-items:center; }
+  .mcard .stat b { font-weight:600; }
+  .mcard .sumpill { margin-top:9px; padding-bottom:16px; font-size:11px; color:#b98da0; line-height:1.5; }
+  .mcard .sumpill b { color:#e2568a; font-weight:600; }
+  .mcard .sumpill.wait b { color:#d9a441; }
+  .mcard .sumpill .spmini { height:3px; background:#f8e4ed; border-radius:2px; margin-top:5px; overflow:hidden; }
+  .mcard .sumpill .spmini i { display:block; height:100%; border-radius:2px;
+    background:linear-gradient(90deg,#ffb3cd,#ff7fa9); }
+  .mcard .sumpill.wait .spmini i { background:linear-gradient(90deg,#ffc59b,#d9a441); }
+  .mcard .go { position:absolute; right:16px; bottom:14px; font-size:11.5px; color:#d9a8bb; }
+
+  /* ---------- 人际关系 ---------- */
+  .relwrap { display:flex; flex:1; min-height:0; }
+  .relcanvas { flex:1; min-width:0; display:flex; flex-direction:column; padding:15px 18px 12px; }
+  .relbar { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .relbar .rlabel { font-size:14px; font-weight:600; color:#c94f7c; }
+  .relbar .spacer { flex:1; }
+  /* 重名合并：一个名字不同的同一个人，选一个保留，其余并进去 */
+  .aliasbar { margin:0 0 10px; background:#fffdfb; border:1px solid var(--line);
+    border-radius:12px; padding:9px 12px 4px; max-height:192px; overflow-y:auto; }
+  .aliasbar.hide { display:none; }
+  .aliasrow { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .aliasrow .hint { flex:1; font-size:11px; color:var(--dim); line-height:1.5; }
+  .aliasgrp { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    padding:7px 0; border-top:1px dashed #fbe9f0; }
+  .aliasgrp:nth-child(2) { border-top:0; }
+  .aliasgrp .kw { font-size:11.5px; color:#b98da0; }
+  .aliasgrp .hint { font-size:10.5px; color:#c3a5b3; margin-left:2px; }
+  .aliaschip { font-family:inherit; font-size:12px; cursor:pointer; background:#fff;
+    border:1px solid var(--line); border-radius:999px; padding:2px 10px; color:#8d6b7a;
+    transition:.14s; }
+  .aliaschip em { font-style:normal; font-size:10px; color:#c0507e; margin-left:5px; }
+  .aliaschip:hover { border-color:var(--acc2); color:#e2568a; background:#fff0f6; }
+  .aliaschip:disabled { opacity:.45; cursor:default; }
+  .graphbox { position:relative; flex:1; min-height:0; background:#fffdfbcc; border:1px solid var(--line);
+    border-radius:16px; overflow:hidden; }
+  #graph { width:100%; height:100%; display:block; }
+  .gnode { cursor:pointer; }
+  .gnode circle { transition:.15s; }
+  .gnode.sel circle { stroke:#e2568a; stroke-width:2.5; }
+  .legend { position:absolute; left:12px; bottom:11px; display:flex; gap:11px; flex-wrap:wrap;
+    font-size:11px; color:var(--dim); background:#fffcfff2; padding:5px 10px; border-radius:9px;
+    border:1px solid #f7dbe7; }
+  .legend i { display:inline-block; width:13px; height:2.5px; border-radius:2px; margin-right:5px;
+    vertical-align:middle; }
+  .relside { flex:0 0 342px; border-left:1px solid var(--line); background:#fffafcf2;
+    display:flex; flex-direction:column; padding:15px 14px 12px; min-height:0; }
+  .relhead { display:flex; align-items:center; gap:10px; padding-bottom:11px;
+    border-bottom:1px dashed var(--line); }
+  .relhead .un { font-size:14px; }
+  .relhead .um { font-size:11px; color:var(--dim); }
+  .relclose { flex:0 0 22px; width:22px; height:22px; padding:0; border-radius:8px;
+    border:1px solid var(--line); background:#fff; color:#c1a6b3; font-size:14px;
+    line-height:1; cursor:pointer; font-family:inherit; transition:.13s; }
+  .relclose:hover { color:var(--bad); border-color:#f6c6d4; background:#fff6f9; }
+  .relclose.hide { display:none; }
+  .relpick { display:flex; gap:6px; align-items:center; margin-top:11px; }
+  .relpick select { flex:0 0 92px; min-width:0; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:5px 4px; font-size:12.5px; color:var(--text);
+    outline:none; font-family:inherit; cursor:pointer; }
+  .relpick input { flex:1 1 auto; min-width:0; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:5px 9px; font-size:12.5px; color:var(--text);
+    outline:none; font-family:inherit; }
+  .relpick select:focus, .relpick input:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  /* 对方名字：自绘下拉。原生 datalist 的箭头只在 hover 时冒出来，而且点第二次关不掉 */
+  .namebox { position:relative; flex:1 1 auto; min-width:0; display:flex; }
+  .namebox input { flex:1 1 auto; min-width:0; padding-right:26px; }
+  .namearrow { position:absolute; right:0; top:0; bottom:0; width:26px; display:flex;
+    align-items:center; justify-content:center; cursor:pointer; }
+  .namearrow:after { content:''; width:0; height:0; border-left:4px solid transparent;
+    border-right:4px solid transparent; border-top:5px solid var(--dim);
+    transition:transform .16s; }
+  .namearrow.up:after { transform:rotate(180deg); }
+  .namemenu { position:absolute; top:calc(100% + 4px); left:0; right:0; max-height:184px;
+    overflow-y:auto; background:#fff; border:1px solid var(--line); border-radius:10px;
+    box-shadow:0 6px 18px #d98aad22; z-index:30; padding:3px; }
+  .namemenu.hide { display:none; }
+  .nameopt { padding:6px 9px; border-radius:6px; font-size:12.5px; cursor:pointer;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .nameopt:hover { background:#fff0f6; color:#c94f7c; }
+  .nameopt.empty { color:var(--dim); cursor:default; }
+  .nameopt.empty:hover { background:transparent; color:var(--dim); }
+  .reltool { display:flex; gap:6px; margin:7px 0 10px; flex-wrap:wrap; }
+  .reltool input { flex:1 1 108px; min-width:0; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:5px 9px; font-size:12.5px; color:var(--text); outline:none;
+    font-family:inherit; }
+  .reltool select { flex:1 1 120px; min-width:0; background:#fff; border:1px solid var(--line);
+    border-radius:8px; padding:5px 7px;
+    font-size:12.5px; color:var(--text); outline:none; font-family:inherit; }
+  .reltool input:focus, .reltool select:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .relrow { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:8px 11px; margin-bottom:8px; }
+  .relrow:hover { border-color:var(--acc2); }
+  .relrow.mine { background:#fffafc; }
+  .relmain { display:flex; align-items:center; gap:5px; font-size:12px; }
+  .relmain .p1, .relmain .p2 { font-weight:600; color:#a8496f; max-width:60px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .relmain .p2 { color:#8d5f76; }
+  .relmain .kw { flex:0 0 auto; color:#c1a6b3; font-size:10.5px; }
+  .relmain .spacer { flex:1; }
+  .chip.rank { border-radius:999px; padding:1px 9px; font-size:11px; border:1px solid #f2dbe4;
+    background:#fdf5f8; color:#a88a97; }
+  .evlist { margin-top:7px; border-top:1px dashed #f3dbe5; padding-top:6px; }
+  .ev { display:flex; gap:7px; align-items:flex-start; font-size:11.5px; color:#8d6b7a;
+    padding:3px 0; line-height:1.6; }
+  .ev .q { flex:1; min-width:0; word-break:break-word; border:1px solid transparent;
+    border-left:2px solid #f6dbe6; border-radius:5px; padding:1px 6px 1px 7px; margin:-1px 0;
+    cursor:text; outline:none; transition:.12s; }
+  .ev .q:hover { background:#fff; border-color:#f7e2ec; border-left-color:var(--acc2); }
+  .ev .q:focus { background:#fff; border-color:var(--acc); border-left-color:var(--acc);
+    box-shadow:0 0 0 3px #ff7fa926; color:var(--text); }
+  .ev .q:empty:before { content:attr(data-ph); color:#d5b9c6; }
+  .ev .t { flex:0 0 auto; color:#c1a6b3; }
+  .ev .x { flex:0 0 auto; cursor:pointer; color:#d9a8bb; padding:0 3px; }
+  .ev .x:hover { color:var(--bad); }
+  .evnew { width:100%; margin-top:6px; background:#fffdfe; border:1px dashed #f0d6e2;
+    border-radius:7px; padding:4px 8px; font-size:11.5px; color:var(--text);
+    font-family:inherit; outline:none; transition:.12s; }
+  .evnew::placeholder { color:#cfb3c0; }
+  .evnew:hover { border-color:#e9c2d4; }
+  .evnew:focus { border-style:solid; border-color:var(--acc); background:#fff;
+    box-shadow:0 0 0 3px #ff7fa926; }
+  .ranksel { border-radius:999px; border:1px solid transparent; font-size:11px;
+    font-family:inherit; padding:0 2px 0 4px; cursor:pointer; outline:none;
+    max-width:104px; transition:.12s; }
+  .ranksel option { color:#4a3a42; background:#fff; }
+  .ranksel:hover { box-shadow:0 0 0 3px #ff7fa91f; }
+  .ranksel:focus { box-shadow:0 0 0 3px #ff7fa933; }
+  .r-认识 { color:#3f8f88; background:#eefaf7; border-color:#c6e9e2; }
+  .r-朋友 { color:#b5762c; background:#fff7ec; border-color:#f2ddbc; }
+  .r-亲友 { color:#c94f7c; background:#fff0f6; border-color:#ffd0e0; }
+  .r-恋人 { color:#fff; background:#e2568a; border-color:#e2568a; }
+  .relside .scroll { margin-top:2px; }
+
+  /* ---------- 好感度 ---------- */
+  .affwrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:16px 20px 12px; }
+  .affbar { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+  .affbar .rlabel { font-size:14px; font-weight:600; color:#c94f7c; }
+  .affbar .hint { font-size:11.5px; color:var(--dim); }
+  .subnav { display:flex; gap:9px; margin-bottom:10px; flex-wrap:wrap; }
+  .stab { display:inline-flex; align-items:center; gap:7px; padding:7px 18px; font-size:13px;
+    color:#8d6b7a; background:#fffdfb; border:1px solid var(--line); border-radius:11px;
+    cursor:pointer; transition:.15s; user-select:none; }
+  .stab:hover { border-color:var(--acc2); color:#e2568a; background:#fff6fa; }
+  .stab.act { background:linear-gradient(135deg,#ffe9f2,#fff5f9); border-color:var(--acc2);
+    color:#c94f7c; font-weight:600; box-shadow:0 3px 10px #ff7fa922; }
+  .stab em { font-style:normal; font-size:11px; color:var(--dim); font-weight:400; }
+  .slead { font-size:11.5px; color:var(--dim); line-height:1.75; margin:0 0 11px; }
+  .apane { display:none; flex:1; min-height:0; }
+  .apane.act { display:flex; flex-direction:column; }
+  .affgrid { display:flex; gap:14px; flex:1; min-height:0; }
+  .panel { background:#fffdfb; border:1px solid var(--line); border-radius:14px; padding:14px 15px;
+    min-height:0; overflow:auto; }
+  .affgrid .panel { flex:1; min-width:0; }
+  .graynote { margin-top:10px; font-size:11px; color:#c3a5b3; line-height:1.7; }
+
+  /* ---------- 总配置 ---------- */
+  .cfgwrap { flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; padding:16px 20px 12px; }
+  .cfgbar { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .cfgbar .rlabel { font-size:14px; font-weight:600; color:#c94f7c; }
+  .cfgbar .hint { font-size:11.5px; color:var(--dim); }
+  /* 设置页的两个子页：配置项 / 功能说明 */
+  .subtabs { display:flex; gap:4px; flex:none; }
+  .subtab { font-size:12.5px; padding:4px 13px; border-radius:999px; cursor:pointer;
+    color:#8d6b7a; border:1px solid transparent; transition:.14s; white-space:nowrap; user-select:none; }
+  .subtab:hover { background:#fff0f6; color:#e2568a; }
+  .subtab.act { background:#fff; border-color:var(--acc2); color:#e2568a; font-weight:600; }
+  .subview { display:none; flex:1; min-height:0; }
+  .subview.act { display:flex; flex-direction:column; }
+  /* 说明子页要贴满，抵消 cfgwrap 的内边距（顶部不顶，避免压到上面的胶囊） */
+  #subDoc .docwrap { margin:0 -20px -12px; }
+  .cfgsec { background:#fffdfb; border:1px solid var(--line); border-radius:14px;
+    padding:13px 16px 6px; max-width:760px; }
+  .cfgsec + .cfgsec { margin-top:12px; }
+  .cfgsec-t { font-size:12px; font-weight:600; color:#c94f7c; margin-bottom:6px;
+    display:flex; align-items:center; gap:9px; }
+  .cfgsec-t:after { content:''; flex:1; height:1px; background:#f7dbe7; }
+  .cfgsec-hint { font-size:11px; color:#b98da0; line-height:1.7; margin:-1px 0 8px; }
+  .cfgrow { display:flex; align-items:center; gap:14px; padding:8px 0; border-bottom:1px dashed #fbe9f0; }
+  .cfgrow:last-child { border-bottom:0; }
+  .cfgname { flex:1; min-width:0; font-size:13px; }
+  .cfghint { font-size:11px; color:var(--dim); line-height:1.6; margin-top:2px; }
+  .cfghint.warn { color:#b8415f; background:#fff4f7; border-left:2px solid #f09595;
+    border-radius:0 6px 6px 0; padding:6px 9px; margin-top:5px; }
+  .cfgnum, .cfgtext { background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:5px 9px; font-size:12.5px; color:var(--text); font-family:inherit; outline:none; }
+  .cfgnum { width:92px; text-align:right; }
+  .cfgtext { width:200px; }
+  .cfgnum:focus, .cfgtext:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .sw { position:relative; width:42px; height:22px; flex:0 0 42px; cursor:pointer; }
+  .sw input { position:absolute; opacity:0; width:0; height:0; }
+  .sw i { position:absolute; inset:0; background:#f4e2ea; border:1px solid var(--line);
+    border-radius:99px; transition:.18s; }
+  .sw i:before { content:''; position:absolute; width:16px; height:16px; left:2px; top:2px;
+    border-radius:50%; background:#fff; box-shadow:0 1px 3px #0001; transition:.18s; }
+  .sw input:checked + i { background:var(--acc); border-color:var(--acc); }
+  .sw input:checked + i:before { transform:translateX(20px); }
+  .cfgfoot { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .cfgfoot .hint { font-size:11px; color:#c3a5b3; word-break:break-all; }
+  .cfgstat { flex:none; width:46px; text-align:right; font-size:11px; color:var(--dim);
+    opacity:0; transition:opacity .2s; }
+  .cfgstat.show { opacity:1; }
+  .cfgstat.ok { color:#3f9a6d; }
+  .cfgstat.fail { color:#d0526b; }
+  .cfgrow.flash { animation:cfgflash .7s ease; }
+  @keyframes cfgflash { 0% { background:#fff3f8; } 100% { background:transparent; } }
+
+  /* ---------- 说明页：左右两栏 ---------- */
+  .docwrap { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .doccols { flex:1; min-height:0; display:flex; }
+  .doccol { flex:1 1 0; min-width:0; display:flex; flex-direction:column; }
+  .doccol + .doccol { border-left:1px solid var(--line); }
+  .doccol-head { flex:0 0 auto; padding:13px 20px 11px; border-bottom:1px solid var(--line);
+    background:#fffafcb8; }
+  .doccol-t { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600;
+    color:#c94f7c; }
+  .doccol-t em { font-style:normal; font-size:10px; font-weight:600; color:#fff;
+    background:var(--acc2); border-radius:5px; padding:1px 6px; flex:none; line-height:1.6; }
+  .doccol-sum { font-size:11px; color:var(--dim); line-height:1.65; margin:4px 0 9px; }
+  .docnav { display:flex; gap:5px; flex-wrap:wrap; }
+  .docnav span { font-size:11px; padding:2px 9px; border-radius:999px; background:#fff;
+    border:1px solid var(--line); color:#8d6b7a; cursor:pointer; transition:.14s; white-space:nowrap; }
+  .docnav span:hover { background:#fff0f6; color:#e2568a; border-color:var(--acc2); }
+  .docscroll { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    padding:14px 18px 46px; position:relative; }
+  .docsec { background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px 15px; }
+  .docsec + .docsec { margin-top:11px; }
+  @media (max-width: 900px) {
+    .doccols { flex-direction:column; overflow-y:auto; }
+    .doccol { flex:0 0 auto; }
+    .doccol + .doccol { border-left:0; border-top:1px solid var(--line); }
+    .docscroll { flex:0 0 auto; overflow:visible; padding-bottom:14px; }
+  }
+  .docsec > h3 { font-size:13px; color:#c94f7c; font-weight:600; margin-bottom:9px;
+    display:flex; align-items:center; gap:8px; }
+  .docsec > h3 em { font-style:normal; font-size:10.5px; font-weight:600; color:#fff;
+    background:var(--acc2); border-radius:6px; padding:1px 6px; flex:none; }
+  .docsec p { font-size:12.5px; line-height:1.85; color:var(--text); margin:0 0 8px; }
+  .docsec p:last-child { margin-bottom:0; }
+  .docsec b { color:#c94f7c; font-weight:600; }
+  .docsec code { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px;
+    background:#fff0f6; color:#c0507e; border-radius:5px; padding:1px 5px; }
+  .docsec ul { margin:0 0 8px; padding-left:18px; }
+  .docsec li { font-size:12.5px; line-height:1.85; color:var(--text); }
+  .docsec li:last-child { margin-bottom:0; }
+  .docsec .sub { font-size:11.5px; color:var(--dim); margin:-4px 0 9px; }
+  .doctab { width:100%; border-collapse:collapse; margin:8px 0 4px; font-size:11.5px; }
+  .doctab th { text-align:left; font-weight:600; color:#c94f7c; padding:6px 8px;
+    border-bottom:1px solid var(--line); background:#fff6fa; white-space:nowrap; }
+  .doctab td { padding:6px 8px; border-bottom:1px dashed #fbe9f0; color:var(--text);
+    line-height:1.7; vertical-align:top; }
+  .doctab tr:last-child td { border-bottom:0; }
+  .doctab code { font-size:11px; }
+  .doccall { background:#fff6fa; border-left:2px solid var(--acc2); border-radius:0 8px 8px 0;
+    padding:8px 12px; font-size:12px; line-height:1.8; color:#8d6b7a; margin:9px 0 4px; }
+  .doccall b { color:#c94f7c; }
+  .doccall.warn { background:#fff4f7; border-left-color:#f09595; color:#b8415f; }
+  .docflow { display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; margin:10px 0 6px; }
+  .docflow div { flex:1; min-width:120px; background:#fff6fa; border:1px solid var(--line);
+    border-radius:10px; padding:8px 10px; font-size:11.5px; line-height:1.65; color:#8d6b7a; }
+  .docflow div b { display:block; color:#c94f7c; font-size:11.5px; margin-bottom:2px; }
+
+  /* ---------- 人际关系 · 列表 ---------- */
+  .rview { display:none; flex:1; min-height:0; flex-direction:column; }
+  .rview.act { display:flex; }
+  .listtools { display:flex; gap:8px; align-items:center; margin-bottom:9px; flex-wrap:wrap; }
+  .listtools .search { flex:0 1 220px; }
+  .listtools select { background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:6px 8px; font-size:12.5px; color:var(--text); font-family:inherit; outline:none; }
+  .allrow { display:flex; align-items:center; gap:9px; background:var(--card);
+    border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:7px;
+    font-size:13px; }
+  .allrow:hover { border-color:var(--acc2); }
+  .allrow.person { cursor:pointer; }
+  .allrow.act { border-color:var(--acc); background:#fff7fa; box-shadow:0 0 0 3px #ff7fa926; }
+  .pav { flex:0 0 24px; width:24px; height:24px; border-radius:8px; color:#fff; font-size:12px;
+    font-weight:600; display:flex; align-items:center; justify-content:center; }
+  .allrow .p1, .allrow .p2 { font-weight:600; color:#a8496f; max-width:150px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .relgroup { display:flex; align-items:center; gap:6px; margin:12px 2px 6px; }
+  .relgroup:first-child { margin-top:2px; }
+  .relgroup .who { font-size:12.5px; font-weight:600; color:#a8496f; max-width:220px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .relgroup .kw { font-size:10.5px; color:#c1a6b3; }
+  .relgroup .n { font-size:10.5px; color:#cfb3c0; margin-left:auto; }
+  .allrow .arrow { color:#d9a8bb; }
+  .allrow .spacer { flex:1; }
+  .allrow select { background:#fff; border:1px solid var(--line); border-radius:7px;
+    padding:3px 6px; font-size:12px; color:var(--text); font-family:inherit; outline:none; }
+  .colhead { font-size:13px; font-weight:600; color:#c94f7c; margin-bottom:10px; display:flex;
+    align-items:center; gap:8px; }
+  .colhead .hint { font-size:11px; font-weight:400; color:var(--dim); }
+  .stagerow { display:flex; gap:7px; align-items:center; margin-bottom:7px; }
+  .stagerow .idx { flex:0 0 16px; font-size:11px; color:#cbb2bd; text-align:center; }
+  .stagerow input { background:#fff; border:1px solid var(--line); border-radius:7px; padding:4px 8px;
+    font-size:12.5px; color:var(--text); font-family:inherit; outline:none; min-width:0; }
+  .stagerow input.sname { flex:1 1 auto; }
+  .stagerow input.sth { flex:0 0 74px; text-align:right; }
+  .stagerow input:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .stagerow .x { cursor:pointer; color:#d9a8bb; font-size:14px; padding:0 3px; }
+  .stagerow .x:hover { color:var(--bad); }
+  .rowactions { display:flex; gap:7px; margin-top:9px; flex-wrap:wrap; }
+  .affdist { display:flex; flex-direction:column; gap:5px; margin-top:4px; }
+  .distrow { display:flex; align-items:center; gap:8px; font-size:11.5px; color:#8d6b7a; }
+  .distrow .dname { flex:0 0 54px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .distrow .dbar { flex:1; height:7px; background:#fdf0f5; border-radius:99px; overflow:hidden; }
+  .distrow .dbar i { display:block; height:100%; background:linear-gradient(90deg,#ffb3cd,#ff8fb8);
+    border-radius:99px; }
+  .distrow .dcnt { flex:0 0 26px; text-align:right; color:#c94f7c; }
+  .affrow { display:flex; gap:10px; align-items:center; padding:9px 11px; border:1px solid var(--line);
+    border-radius:10px; background:var(--card); margin-bottom:7px; }
+  .affrow:hover { border-color:var(--acc2); }
+  .affmain { flex:1; min-width:0; }
+  .affline { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .affline .an { font-weight:600; color:#a8496f; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; max-width:150px; }
+  .affline .xp { margin-left:auto; font-size:11.5px; color:#e2568a; font-weight:600; }
+  .pbar { height:6px; background:#fdf0f5; border-radius:99px; overflow:hidden; margin:6px 0 4px; }
+  .pbar i { display:block; height:100%; background:linear-gradient(90deg,#ffb3cd,#ff7fa9);
+    border-radius:99px; transition:.3s; }
+  .affnext { font-size:10.5px; color:var(--dim); }
+  .affops { flex:0 0 auto; display:flex; align-items:center; gap:4px; }
+  .affops button { width:26px; height:24px; border-radius:7px; border:1px solid var(--line);
+    background:#fff; color:#c94f7c; cursor:pointer; font-size:13px; line-height:1; font-family:inherit; }
+  .affops button:hover { border-color:var(--acc); }
+  .affops input { width:62px; height:24px; text-align:center; border:1px solid var(--line);
+    border-radius:7px; font-size:12px; color:var(--text); font-family:inherit; outline:none; background:#fff; }
+  .affops input:focus { border-color:var(--acc); }
+  .affops .save { width:auto; padding:0 9px; font-size:11.5px; }
+
+  /* ---------- 人物（AI 与人） ---------- */
+  .pplwrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:16px 20px 12px; }
+  .ppane { display:none; flex:1; min-height:0; }
+  .ppane.act { display:flex; flex-direction:column; }
+  .pgrid { display:flex; gap:14px; flex:1; min-height:0; }
+  .pcol { background:#fffdfb; border:1px solid var(--line); border-radius:14px;
+    display:flex; flex-direction:column; min-height:0; }
+  .plist { flex:0 0 306px; padding:12px; }
+  .pdetail { flex:1; min-width:0; padding:14px 16px; overflow-y:auto; }
+  .pcard { display:flex; gap:10px; align-items:center; padding:7px 9px; border-radius:10px;
+    cursor:pointer; border:1px solid transparent; transition:.14s; }
+  .pcard:hover { background:#fff0f6; }
+  .pcard.act { background:#fff0f6; border-color:var(--acc2); }
+  .pcard .pav { flex:0 0 28px; width:28px; height:28px; border-radius:9px; }
+  .pcard .pbody { flex:1; min-width:0; }
+  .pcard .pname { font-size:13px; font-weight:600; color:#a8496f; display:flex; align-items:center;
+    gap:6px; min-width:0; }
+  .pcard .pname b { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pcard .pmeta { font-size:10.5px; color:var(--dim); margin-top:1px; display:flex; gap:6px;
+    align-items:center; flex-wrap:wrap; }
+  .pcard .pxp { flex:0 0 auto; font-size:11.5px; color:#e2568a; font-weight:600; }
+  .badge { font-size:10px; font-weight:400; padding:0 6px; border-radius:999px; line-height:1.7;
+    white-space:nowrap; }
+  .badge.qq { color:#4f89a8; background:#eef8fc; border:1px solid #cde9f3; }
+  .badge.noqq { color:#b57d1f; background:#fff8e8; border:1px solid #f3dfb0; }
+  .phead { display:flex; gap:12px; align-items:center; margin-bottom:13px; }
+  .phead .big { width:44px; height:44px; flex:0 0 44px; border-radius:13px; font-size:17px;
+    font-weight:600; color:#fff; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#ffa8c6,#ff8fb8); }
+  .phead h3 { font-size:16px; color:#c94f7c; font-weight:600; }
+  .phead .sub { font-size:11.5px; color:var(--dim); }
+  .psec { margin-bottom:14px; }
+  .psec-t { font-size:12px; font-weight:600; color:#c94f7c; margin-bottom:7px; display:flex;
+    align-items:center; gap:8px; }
+  .psec-t:after { content:''; flex:1; height:1px; background:#f7dbe7; }
+  .psec-t .hint { font-size:10.5px; font-weight:400; color:var(--dim); }
+  .chipwrap { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+  .achip { display:inline-flex; align-items:center; gap:4px; font-size:11.5px; padding:2px 5px 2px 9px;
+    border-radius:999px; background:#fff0f6; border:1px solid #ffd0e0; color:#a8496f; }
+  .achip.self { background:#fff; border-color:var(--line); color:#8d6b7a; padding-right:9px; }
+  .achip .x { cursor:pointer; color:#d9a8bb; font-size:12px; padding:0 2px; }
+  .achip .x:hover { color:var(--bad); }
+  .addinline { display:inline-flex; gap:5px; align-items:center; }
+  .addinline input { width:104px; background:#fff; border:1px solid var(--line); border-radius:7px;
+    padding:3px 8px; font-size:12px; color:var(--text); font-family:inherit; outline:none; }
+  .addinline input:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .qline { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+  .qline input { width:150px; background:#fff; border:1px solid var(--line); border-radius:7px;
+    padding:4px 9px; font-size:12.5px; color:var(--text); font-family:inherit; outline:none; }
+  .qline input:focus { border-color:var(--acc); box-shadow:0 0 0 3px #ff7fa933; }
+  .qline select { background:#fff; border:1px solid var(--line); border-radius:7px;
+    padding:4px 8px; font-size:12.5px; color:var(--text); font-family:inherit; outline:none;
+    max-width:190px; }
+  .suggest { border:1px dashed #f0d8a6; background:#fffcf1; border-radius:10px; padding:9px 11px;
+    font-size:11.5px; color:#8d6b7a; line-height:1.7; margin-bottom:8px; }
+  .suggest b { color:#a8823c; }
+  .relmini { display:flex; gap:6px; flex-wrap:wrap; }
+  .relmini .rm { display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:2px 8px;
+    border-radius:999px; background:#fff; border:1px solid var(--line); color:#8d6b7a; }
+  .relmini .rm i { font-style:normal; color:#c1a6b3; font-size:10.5px; }
+  .pempty { color:var(--dim); font-size:11.5px; padding:6px 0; }
+
+  /* ---------- Token 用量 ---------- */
+  .tokwrap { flex:1; min-height:0; display:flex; flex-direction:column; padding:16px 20px 14px; overflow:auto; }
+  .tokbar { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
+  .tokbar .rlabel { font-size:14px; font-weight:600; color:#c94f7c; }
+  .tokbar .hint { font-size:11.5px; color:var(--dim); }
+  .tokbar .spacer { flex:1; }
+  .tokcards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  .tokcard { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:11px 13px; }
+  .tokcard .tk { font-size:11.5px; color:var(--dim); }
+  .tokcard .tv { font-size:21px; font-weight:600; color:#c94f7c; margin:3px 0 2px; letter-spacing:.4px; }
+  .tokcard .ts2 { font-size:10.5px; color:#c3a5b3; }
+  .toksec { margin-bottom:16px; }
+  .mbar { display:flex; align-items:center; gap:9px; margin-bottom:7px; font-size:12.5px; }
+  .mbar .mn { flex:0 0 84px; color:#8d6b7a; }
+  .mbar .mt { flex:1; height:10px; background:#fdf0f5; border-radius:99px; overflow:hidden; }
+  .mbar .mt i { display:block; height:100%; border-radius:99px; }
+  .mbar .mv { flex:0 0 100px; text-align:right; color:#c94f7c; font-weight:600; font-size:11.5px; }
+  .mbar .mc { flex:0 0 54px; text-align:right; font-size:10.5px; color:var(--dim); }
+  .chartbox { display:flex; align-items:flex-end; gap:3px; height:150px; padding:6px 2px 0; border-bottom:1px solid var(--line); }
+  .cbar { flex:1; min-width:2px; height:100%; display:flex; flex-direction:column; justify-content:flex-end; }
+  .cbar i { display:block; width:100%; border-radius:2px 2px 0 0; }
+  .cbar:hover i { filter:brightness(1.08); }
+  .caxis { display:flex; gap:3px; margin-top:5px; font-size:10px; color:#c3a5b3; }
+  .caxis span { flex:1; text-align:center; overflow:hidden; white-space:nowrap; }
+  .trow { display:flex; align-items:center; gap:8px; font-size:12px; padding:6px 2px; border-bottom:1px dashed #f5dde6; }
+  .trow .tt { flex:0 0 64px; color:#c3a5b3; font-size:10.5px; }
+  .trow .tm { flex:0 0 88px; color:#a8496f; }
+  .trow .tu { flex:1; color:var(--dim); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .trow .tv2 { flex:0 0 84px; text-align:right; color:#c94f7c; font-weight:600; }
+  .trow .src { flex:0 0 40px; text-align:right; font-size:10px; color:#c3a5b3; }
+
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:#fff;
+    border:1px solid var(--acc2); color:var(--text); padding:8px 20px; border-radius:10px; display:none;
+    z-index:9; box-shadow:0 4px 16px #ff9fbd44; font-size:13px; pointer-events:none; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#ffd3e2; border-radius:8px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="tb-left">
+      <span class="back hide" id="back">←</span>
+      <span id="tbTitle">蔗糖的记忆中枢</span>
+    </div>
+    <nav class="tb-tabs">
+      <span class="tbt" data-m="memory">记忆管理</span>
+      <span class="tbt" data-m="rel">人际关系</span>
+      <span class="tbt" data-m="ppl">AI 与人</span>
+      <span class="tbt" data-m="tok">用量</span>
+    </nav>
+  </header>
+
+  <section class="view act" id="home">
+    <div class="homewrap">
+      <h1>蔗糖的记忆中枢</h1>
+      <div class="sub">挑一个模块进去。记忆归记忆，关系归关系，人归人，互不打扰。</div>
+      <div class="cards">
+        <div class="mcard" data-m="memory">
+          <div class="ic">▤</div>
+          <h3>记忆管理</h3>
+          <p>按用户看聊天内容、短期摘要、长期记忆；能增删改，也能看写入审核和注入预览。</p>
+          <div class="stat" id="statMem"><span>加载中…</span></div>
+          <div class="sumpill" id="statSum" style="display:none"></div>
+          <div class="go">进入 →</div>
+        </div>
+        <div class="mcard" data-m="rel">
+          <div class="ic">◇</div>
+          <h3>人际关系</h3>
+          <p>人和人之间的关系网。点开一个人，能改关系、也能看和删这条关系的依据。</p>
+          <div class="stat" id="statRel"><span>加载中…</span></div>
+          <div class="go">进入 →</div>
+        </div>
+        <div class="mcard" data-m="ppl">
+          <div class="ic">♡</div>
+          <h3>AI 与人</h3>
+          <p>一个人 = 一个 QQ + 一串称呼。外号、写错的写法都挂到同一个人名下，好感度和关系不再分成几份。</p>
+          <div class="stat" id="statPpl"><span>加载中…</span></div>
+          <div class="go">进入 →</div>
+        </div>
+        <div class="mcard" data-m="tok">
+          <div class="ic">◎</div>
+          <h3>Token 用量</h3>
+          <p>对话、摘要、注入各花了多少 token。总量、24 小时、分模块和曲线都在这。</p>
+          <div class="stat" id="statTok"><span>加载中…</span></div>
+          <div class="go">进入 →</div>
+        </div>
+        <div class="mcard" data-m="config">
+          <div class="ic">▦</div>
+          <h3>设置</h3>
+          <p>各功能的开关和数值、给 bot 的工具权限都在这；顶上可以切到「功能说明」，看每个功能是怎么实现的。</p>
+          <div class="stat" id="statCfg"><span>加载中…</span></div>
+          <div class="go">进入 →</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="modMemory">
+  <div class="app">
+  <aside class="side">
+    <div class="brand">蔗糖的记忆中枢~</div>
+    <div class="status" id="status">加载中…</div>
+    <div class="sumprog" id="sumProg" style="display:none"></div>
+    <input class="search" id="search" type="text" placeholder="搜人…">
+    <div class="uslist" id="users"><div class="empty" style="padding:30px 0">加载中…</div></div>
+    <div class="sidefoot">
+      <div class="navitem" id="navAudit">写入审核 <em id="auditCount"></em></div>
+      <div class="navitem" id="navOutbound">转述/外发 <em id="obCount"></em></div>
+      <div class="navitem" id="navPack">注入预览</div>
+      <div class="mode" id="mode"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="userView" style="display:flex; flex-direction:column; flex:1; min-height:0">
+      <div class="head">
+        <div class="big" id="uav">?</div>
+        <div>
+          <h2 id="uname">还没选人</h2>
+          <div class="meta" id="umeta">左边挑一个用户，右边就是 Ta 的全部记忆</div>
+        </div>
+        <div class="tools">
+          <button class="btn primary" id="addL3">+ 聊天记录</button>
+          <button class="btn" id="addL2">+ 长期记忆</button>
+          <button class="btn" id="refresh">刷新</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab act" data-t="chat">聊天内容 <span id="n3">0</span> 条</div>
+        <div class="tab" data-t="sum">短期记忆 <span id="nsum">0</span> 条</div>
+        <div class="tab" data-t="l2">长期记忆 <span id="n2">0</span> 条</div>
+      </div>
+
+      <div class="scroll">
+        <div class="pane" id="paneSum">
+          <div class="lead">每段对话提炼一条摘要，永久保留；它也是长期记忆的出处。按天折叠，最新的在最上面。</div>
+          <div id="listSum"></div>
+        </div>
+
+        <div class="pane" id="pane2">
+          <div class="lead">按「那次对话的总结」分组，展开一组能看到它当时提炼出的全部条目；也能切到「按分类」查看，每条会标出总结时间。</div>
+          <div class="l2view">
+            <button class="vbtn act" data-v="summary">按总结分组</button>
+            <button class="vbtn" data-v="category">按分类查看</button>
+          </div>
+          <div class="filterbar">
+            <input type="text" id="q2" placeholder="搜谓词或内容…">
+            <span class="hint" id="h2"></span>
+          </div>
+          <div class="addbox" id="add2box" style="display:none">
+            <div class="editor">
+              <label>分类</label>
+              <select id="n2pred">
+                <option value="自我相关">自我相关（年龄/身高/身体状况等客观事实）</option>
+                <option value="爱好技能">爱好技能（喜欢什么 / 会什么）</option>
+                <option value="生活习惯">生活习惯（作息/口味/日常规律）</option>
+                <option value="经历">经历（过去的各种经历）</option>
+                <option value="打算">打算（未来想做的）</option>
+                <option value="评价认为">评价认为（对自己/他人的看法，非事实）</option>
+                <option value="其他">其他（兜底）</option>
+              </select>
+              <label>内容</label>
+              <textarea id="n2val" placeholder="比如：冰美式，不加糖"></textarea>
+              <div class="line" style="margin-top:2px">
+                <div class="w"><label>把握（0-100）</label><input id="n2conf" type="number" min="0" max="100" value="90"></div>
+              </div>
+              <div class="send">
+                <button class="btn primary mini" id="n2save">存下来</button>
+                <button class="btn mini" id="n2cancel">取消</button>
+              </div>
+            </div>
+          </div>
+          <div id="list2"></div>
+        </div>
+
+        <div class="pane act" id="pane3">
+          <div class="lead">原话和 AI 回复都在这，按「天 → 一次对话」折叠，最新的在最上面；点开后按「一轮」倒序，最近的一轮在前，每轮里你说的话在 AI 回复上面。<b id="ret">14</b> 天后自动删除，摘要不删。</div>
+          <div class="filterbar">
+            <select id="t3">
+              <option value="">全部类型</option>
+              <option value="user_message">用户说的</option>
+              <option value="bot_reply">AI 说的</option>
+              <option value="manual_note">手动备注</option>
+              <option value="demoted_candidate">被降级的候选</option>
+            </select>
+            <input type="text" id="q3" placeholder="搜内容…">
+            <span class="hint" id="h3"></span>
+          </div>
+          <div class="addbox" id="add3box" style="display:none">
+            <div class="editor">
+              <div class="line">
+                <div><label>类型</label>
+                  <select id="n3type">
+                    <option value="manual_note">手动备注</option>
+                    <option value="user_message">用户说的</option>
+                    <option value="bot_reply">AI 说的</option>
+                  </select>
+                </div>
+              </div>
+              <label>内容</label>
+              <textarea id="n3val" placeholder="想给这个人补一条什么记录？"></textarea>
+              <div class="send">
+                <button class="btn primary mini" id="n3save">存下来</button>
+                <button class="btn mini" id="n3cancel">取消</button>
+              </div>
+            </div>
+          </div>
+          <div id="list3"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="globalView" style="display:none; flex-direction:column; flex:1; min-height:0">
+      <div class="head">
+        <div class="big" id="gav" style="background:linear-gradient(135deg,#bdb0ff,#a89bf5)">·</div>
+        <div>
+          <h2 id="gname">全局</h2>
+          <div class="meta" id="gmeta"></div>
+        </div>
+        <div class="tools">
+          <button class="btn" id="gback">← 回到用户记忆</button>
+        </div>
+      </div>
+      <div class="scroll" id="gbody"></div>
+    </div>
+  </main>
+  </div>
+  </section>
+
+  <section class="view" id="modRel">
+    <div class="relwrap">
+      <div class="relcanvas">
+        <div class="relbar">
+          <span class="rlabel">人际关系</span>
+          <span class="hint" id="relHint"></span>
+          <span class="spacer"></span>
+          <button class="btn mini" id="relMergeBtn" title="把「张三」和「张三（群友）」这种同一个人合成一个">合并重名</button>
+          <button class="btn mini" id="relRefresh">刷新</button>
+        </div>
+        <div class="aliasbar hide" id="relAliasBar">
+          <div class="aliasrow">
+            <span class="hint">下面这些名字看起来是同一个人（只差括号备注、大小写或看不见的字符）。点你要保留的那个，其余的并进去。</span>
+            <button class="btn mini" id="relAliasClose">收起</button>
+          </div>
+          <div id="relAliasList"></div>
+        </div>
+        <div class="subnav">
+          <div class="stab act" data-r="graph">关系图</div>
+          <div class="stab" data-r="list">列表 <em id="relListCount"></em></div>
+        </div>
+        <div class="slead" id="relLead"></div>
+        <div class="rview act" id="relGraphView">
+          <div class="graphbox" id="graphbox">
+            <svg id="graph"></svg>
+            <div class="legend" id="relLegend"></div>
+          </div>
+        </div>
+        <div class="rview" id="relListView">
+          <div class="listtools">
+            <input class="search" id="relListSearch" placeholder="搜人…">
+            <select id="relListKind">
+              <option value="">全部</option>
+              <option value="linked">有关系</option>
+              <option value="loose">只有记忆</option>
+            </select>
+            <span class="hint" id="relListHint"></span>
+          </div>
+          <div class="scroll" id="relListAll"></div>
+        </div>
+      </div>
+      <aside class="relside">
+        <div class="relhead">
+          <div class="av" id="relAv">?</div>
+          <div style="min-width:0; flex:1">
+            <div class="un" id="relName">还没选人</div>
+            <div class="um" id="relMeta">点关系图上的圆点，或者左边列表里挑一个人</div>
+          </div>
+          <button class="relclose hide" id="relClear" title="取消选择">×</button>
+        </div>
+        <div class="relpick">
+          <select id="relPick" title="选一个人"><option value="">选人…</option></select>
+          <div class="namebox" id="relTargetBox">
+            <input id="relTarget" placeholder="输入对方名字" autocomplete="off" spellcheck="false">
+            <span class="namearrow" id="relTargetArrow" title="展开 / 收起"></span>
+            <div class="namemenu hide" id="relTargetMenu"></div>
+          </div>
+        </div>
+        <div class="reltool">
+          <select id="relRank"></select>
+          <button class="btn primary mini" id="relSave">记一条</button>
+        </div>
+        <input class="search" id="relSearch" placeholder="按对方名字过滤…" style="margin-bottom:8px">
+        <div class="scroll" id="relList"><div class="empty">先选一个人</div></div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="view" id="modPeople">
+    <div class="pplwrap">
+      <div class="affbar">
+        <span class="rlabel">AI 与人</span>
+        <span class="hint" id="pplHintBar"></span>
+        <span class="spacer" style="flex:1"></span>
+        <button class="btn mini" id="pplScan" title="重新读一遍库里的名字，把裂开的人并回去">重新识别</button>
+      </div>
+      <div class="subnav">
+        <div class="stab act" data-p="people">人物 <em id="pplCount"></em></div>
+        <div class="stab" data-p="stages">好感阶段</div>
+      </div>
+      <div class="slead" id="pplLead"></div>
+
+      <div class="ppane act" id="ppanePeople">
+        <div class="pgrid">
+          <div class="pcol plist">
+            <input class="search" id="pplSearch" placeholder="搜名字 / 称呼 / QQ…">
+            <div class="scroll" id="pplList" style="margin-top:9px">
+              <div class="empty" style="padding:24px 0">加载中…</div>
+            </div>
+          </div>
+          <div class="pcol pdetail" id="pplDetail">
+            <div class="empty" style="padding:40px 0">左边挑一个人</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ppane" id="ppaneStages">
+        <div class="affgrid">
+          <div class="panel">
+            <div class="colhead">阶段 <span class="hint">名字和阈值都能改，保存后立刻生效</span></div>
+            <div id="stageList"></div>
+            <div class="rowactions">
+              <button class="btn mini primary" id="stageSave">保存</button>
+              <button class="btn mini" id="stageAdd">+ 一档</button>
+              <button class="btn mini" id="stageReset">恢复默认</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="colhead">分布 <span class="hint">每个阶段有几个人</span></div>
+            <div class="affdist" id="affDist"></div>
+          </div>
+        </div>
+        <div class="graynote" id="affRule"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="modTok">
+    <div class="tokwrap">
+      <div class="tokbar">
+        <span class="rlabel">Token 用量</span>
+        <span class="hint" id="tokHint"></span>
+        <span class="spacer"></span>
+        <button class="btn mini" id="tokRefresh">刷新</button>
+        <button class="btn mini danger" id="tokClear">清空记录</button>
+      </div>
+      <div class="subnav">
+        <div class="stab act" data-k="all">全部</div>
+        <div class="stab" data-k="24h">24 小时</div>
+        <div class="stab" data-k="7d">7 天</div>
+        <div class="stab" data-k="30d">30 天</div>
+      </div>
+      <div class="slead" id="tokLead">对话那行是 provider 报的真实用量；记忆包注入和关系快照是我们按文本估的（没有真实 usage 可拿），只表示「这部分占了多少」，已经算在对话的输入里了，别跟对话相加。</div>
+      <div class="tokcards">
+        <div class="tokcard">
+          <div class="tk">总使用</div>
+          <div class="tv" id="tkAll">—</div>
+          <div class="ts2" id="tkAllSub">—</div>
+        </div>
+        <div class="tokcard">
+          <div class="tk">24 小时内</div>
+          <div class="tv" id="tkH24">—</div>
+          <div class="ts2" id="tkH24Sub">—</div>
+        </div>
+        <div class="tokcard">
+          <div class="tk">今天</div>
+          <div class="tv" id="tkToday">—</div>
+          <div class="ts2" id="tkTodaySub">—</div>
+        </div>
+      </div>
+      <div class="toksec">
+        <div class="colhead">各模块用量 <span class="hint" id="tokModHint"></span></div>
+        <div id="tokMods"></div>
+      </div>
+      <div class="toksec">
+        <div class="colhead">用量曲线 <span class="hint" id="tokSeriesHint"></span></div>
+        <div class="chartbox" id="tokChart"></div>
+        <div class="caxis" id="tokAxis"></div>
+      </div>
+      <div class="toksec">
+        <div class="colhead">最近调用</div>
+        <div id="tokRecent"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="modConfig">
+    <div class="cfgwrap">
+      <div class="cfgbar">
+        <div class="subtabs" id="setTabs">
+          <span class="subtab act" data-s="cfg">配置项</span>
+          <span class="subtab" data-s="doc">功能说明</span>
+        </div>
+        <span class="hint" id="cfgHint"></span>
+      </div>
+
+      <div class="subview act" id="subCfg">
+        <div class="scroll" id="cfgList"></div>
+        <div class="cfgfoot">
+          <button class="btn" id="cfgReload">重新读取</button>
+          <button class="btn" id="cfgRetry" style="display:none">重试保存</button>
+          <span class="hint" id="cfgStat"></span>
+          <span class="hint" id="cfgPath"></span>
+        </div>
+      </div>
+
+      <div class="subview" id="subDoc">
+        <div class="docwrap">
+          <div class="doccols">
+
+            <div class="doccol">
+              <div class="doccol-head">
+                <div class="doccol-t"><em>读</em>它在干什么</div>
+                <div class="doccol-sum">从它解决什么问题讲起，按一轮对话的流程走一遍。第一次进来建议从头读。</div>
+                <div class="docnav">
+                  <span data-d="d1">它是什么</span>
+                  <span data-d="d3">三层记忆</span>
+                  <span data-d="d4">记忆包</span>
+                  <span data-d="d5">人物身份</span>
+                  <span data-d="d6">人际关系</span>
+                  <span data-d="d8">群聊策略</span>
+                  <span data-d="d12">上手顺序</span>
+                </div>
+              </div>
+              <div class="docscroll">
+
+                <div class="docsec" id="d1">
+                  <h3><em>01</em>它是什么</h3>
+                  <p>给聊天机器人补三样东西：<b>记得住</b>（分层记忆）、<b>有亲疏</b>（好感度）、<b>知道人和人的关系</b>（关系图）。</p>
+                  <p>数据全部落在本地一个 SQLite 文件里，不联网、不依赖向量库、不自带 embedding 模型。除了它自己触发的阶段总结，平时聊天不会多花你一次模型调用。</p>
+                  <p>三条设计取向，理解了这三条，后面所有行为都能推出来：</p>
+                  <ul>
+                    <li><b>能算的不用模型猜</b>。检索、打分、裁剪、去重全是字符串运算和算术，不调模型。</li>
+                    <li><b>模型的输出只是草稿</b>。总结返回的事实、关系，落库前要过门控和指纹去重，不合格就丢。</li>
+                    <li><b>注入量可数、可关</b>。每轮塞进 prompt 的东西有 token 预算，超了按规则砍；每个模块都有独立开关。</li>
+                  </ul>
+                </div>
+
+                <div class="docsec" id="d3">
+                  <h3><em>02</em>三层记忆</h3>
+                  <div class="docflow">
+                    <div><b>L3 原话</b>每条消息一行<br>保留天数可设</div>
+                    <div><b>会话摘要</b>攒够一批才做<br>把一长段压成几行</div>
+                    <div><b>L2 事实</b>从摘要里抽<br>带说话人和置信度</div>
+                  </div>
+                  <p><b>L3 事件流</b>：用户每发一条、AI 每回一条，各落一行，带说话人、会话 ID、到期时间。默认保留 14 天，到期由清理任务删掉，设 0 就永久留着。</p>
+                  <p><b>会话摘要</b>：同一个会话累计满 <code>50</code> 条用户消息（默认值，下面几个数字同理），再等 <code>10</code> 秒确认这轮聊完，就把最近 <code>60</code> 条用户消息 + <code>30</code> 条 AI 回复拼起来，调一次模型，让它输出摘要 + 事实 + 关系。摘要也写在 <code>l3_events</code> 里，用 <code>session_summary</code> 标记。</p>
+                  <p><b>L2 事实</b>：从摘要里抽出来的「谁 · 是什么」，例如「小明 · 女朋友 · 小红」。每条都有 <b>speaker</b>（谁说的）和 <b>confidence</b>（多确定）。</p>
+                  <p><b>怎么防重复</b>：指纹 = <code>sha256(subject|predicate)</code> 取前 32 位。同一个指纹再次写进来，旧那条标成 <code>replaced</code> 并把 <code>replaced_by</code> 指向新那条，不删也不覆盖。所以面板里能点开一条记忆看它的修订链路，知道从哪句原话开始、中间改过几次。</p>
+                  <div class="doccall">为什么非要分三层：原话太占地方但不能丢（要能追溯），摘要省地方但会糊（细节被模型吃掉），事实最省但会过时（关系会变）。三层各留一份，用的时候按预算取。</div>
+                </div>
+
+                <div class="docsec" id="d4">
+                  <h3><em>03</em>记忆包：每轮现拼，从不缓存</h3>
+                  <p>每次你说话、在模型开口之前，插件现拼一段文字塞进 <code>system_prompt</code>，这段就叫记忆包。不写进对话历史，所以不会滚雪球。</p>
+                  <p><b>四步</b>：</p>
+                  <ul>
+                    <li><b>取候选</b>：当前说话人的有效 L2（默认最多 12 条）+ 相关 L3 原话（默认 5 条）+ 本会话摘要</li>
+                    <li><b>打分</b>：把你的话和每条记忆都拆成相邻两字（2-gram），重合越多分越高；分数 = 重合数 × 2 + 置信度 + 稳定性 × 0.1。纯字符串运算，不调模型</li>
+                    <li><b>裁剪</b>：超过预算（默认 <code>600</code> token）就先砍 L3 原话，还超就砍低置信的 L2，直到塞得下</li>
+                    <li><b>渲染</b>：拼成一段带标题的结构化文本写进系统提示</li>
+                  </ul>
+                  <p><b>作用域</b>：默认按人隔离，只取当前说话人的事实和本会话的摘要。关掉这个开关会变成全库检索，别人聊过的东西会跑到你的对话里，面板调试时才建议关。</p>
+                  <div class="doccall warn">用 2-gram 是因为它零成本、可解释、不会有假命中到离谱的程度。代价是<b>不懂同义</b>：你说「对象」，它翻箱倒柜也找不到「男朋友」那条。</div>
+                </div>
+
+                <div class="docsec" id="d5">
+                  <h3><em>04</em>人物身份（AI 与人）</h3>
+                  <p>一句话：<b>一个人 = 一个 QQ + 一串称呼。</b>好感、关系、记忆都记在「人」身上，不记在某个写法上。</p>
+                  <p>为什么要多这一层：同一个人的叫法太多——昵称、外号、英文名、甚至别人打错的名字。以前这些写法直接拿来当键，于是「小红」和「徐老鸭」在库里变成两个人，好感各记一半、关系图上两个点。</p>
+                  <ul>
+                    <li><b>QQ 是身份锚</b>：私聊时从会话串里自动认出 QQ 并绑上，面板里也能手动填。绑了以后换昵称、被叫外号都还是同一个人</li>
+                    <li><b>称呼表</b>：每个称呼指向一个人。面板能加能删；删错不影响记忆，只是以后不认这个叫法</li>
+                    <li><b>自动学</b>：你说「A 就是 B」「A 也叫 B」「B 是 A 的外号」时当场学下来（纯正则，不调模型），并且立刻把已经裂开的两个节点合回去</li>
+                    <li><b>只在有把握时自动合</b>：写法相同（含看不见的占位字符）、QQ 相同、你亲口说过是同一个人——这三种才自动合。读音一样但字不同（王伟 / 王薇）只在面板上标「疑似同一个人」，点一下才合</li>
+                    <li><b>好感度</b>：每人一个分数，你每说一条消息涨一次：<code>4 × (1 - 当前分 / 上限)</code>，最少 +1，越接近上限越慢，永远到不了顶。分数对上「阶段表」的阈值就是阶段，名字和阈值都能改</li>
+                    <li><b>影响语气</b>：开着这个开关时，插件按阶段名里的关键词生成一句语气提示，跟着关系快照一起注入。名字里带「恋 / 爱 / 甜 / 暧昧」就提示亲昵宠溺，带「友」就熟络轻松，认不出就退回客气拘谨</li>
+                  </ul>
+                </div>
+
+                <div class="docsec" id="d6">
+                  <h3><em>05</em>人际关系</h3>
+                  <p>一句话：<b>这张表记的是「谁认为谁是什么」，不是事实库。</b></p>
+                  <p>每条边是「A 认为 B 是某某」。三个人各自说「小明是我男朋友」，就是三条互不覆盖的边。所以它会记下互相矛盾的说法，这是设计如此，不是 bug。人说谎、转述、开玩笑，只要是他自己讲的，都照记。</p>
+                  <ul>
+                    <li><b>证据</b>：每条边可以挂多条原话，点开某人能看到这些原话</li>
+                    <li><b>快照注入</b>：每轮只带当前说话人相关的边（默认 6 条），渲染成人话塞进系统提示，让 AI 知道该用什么口气</li>
+                    <li><b>工具</b>：AI 可以调「记关系」（写）和「查关系」（读），两者都要过右边那六道闸</li>
+                    <li><b>重名归并</b>：写之前先问「这个人是谁」——先查称呼表（徐老鸭 → 小红），认不出再看库里有没有同一个写法（只差括号备注、大小写、看不见的字符就算同一人，「张三」和「张三（群友）」合成一条）。都认不出才新建，并且立刻有身份记录，面板上就能给它绑 QQ</li>
+                  </ul>
+                </div>
+
+                <div class="docsec" id="d8">
+                  <h3><em>06</em>群聊策略：默认完全只读</h3>
+                  <p>群里默认只做三件事：读记忆、答话、别的什么都不干。</p>
+                  <ul>
+                    <li>不写聊天记录，所以群聊内容一个字节都不入库</li>
+                    <li>不加好感度</li>
+                    <li>不计入总结条数，不会把私聊的总结节奏带偏</li>
+                    <li>AI 不能改关系（开关默认关）</li>
+                  </ul>
+                  <div class="doccall warn">这个插件没有做群聊适配，也不打算做。真要开，会遇到三个必现问题：说话人归属错乱（A 说的话被当成 B 的）、L2 互相串台、token 被群聊白白吃掉。<b>开了之后出现的任何记忆错乱，都不算 bug。</b></div>
+                  <p><b>怎么判断在群里</b>：三级兜底——先问适配器要群号，拿不到就看消息来源串里有没有群标记，还不行就看消息对象的类型名。因为不同适配器这三个来源不一定都给，只靠一个会把群聊当私聊处理。</p>
+                  <p><b>群不会出现在关系图和好感度里</b>：见到一个群就把它的群号（和群名）记进 <code>known_groups</code>，读的时候凡是命中群号/群名、或者带 <code>group:</code> 前缀的，一律当群滤掉，不画节点、不算好感。历史数据会从存下来的会话串里反推群号补登记一遍。万一有人被误判成群，把那条群记录删掉即可，人或数据本身都没动。</p>
+                </div>
+
+                <div class="docsec" id="d12">
+                  <h3><em>07</em>推荐的配置顺序</h3>
+                  <ul>
+                    <li><b>先别开注入</b>。默认是影子模式：照常记录，AI 看不见。先跑几天，在面板里看记录得准不准</li>
+                    <li>觉得记得对，再开「注入记忆」。这时候 AI 才开始真的用上这些记忆</li>
+                    <li><b>只留一个记忆插件</b>。装了别的同类插件就关掉这个的注入，否则同样的内容会注入两遍，白烧 token</li>
+                    <li>主人权限按需开。开了「只限主人」，就要确认你自己在管理员里，或者把自己的号填进额外授权名单，不然连你自己都会被挡</li>
+                    <li>总结专用模型可以挂个便宜的小模型。总结不追求质量，只追求把事记下来</li>
+                  </ul>
+                </div>
+
+              </div>
+            </div>
+
+            <div class="doccol">
+              <div class="doccol-head">
+                <div class="doccol-t"><em>查</em>这些东西分别是什么</div>
+                <div class="doccol-sum">表结构、拦截规则、用量账、文件分工 —— 都不用背，用到的时候当手册查。</div>
+                <div class="docnav">
+                  <span data-d="d2">数据存在哪</span>
+                  <span data-d="d7">工具闸门</span>
+                  <span data-d="d9">Token 统计</span>
+                  <span data-d="d10">文件与接口</span>
+                  <span data-d="d11">已知限制</span>
+                  <span data-d="d13">配置改在哪</span>
+                </div>
+              </div>
+              <div class="docscroll">
+
+                <div class="docsec" id="d2">
+                  <h3><em>01</em>数据存在哪</h3>
+                  <p>一个文件：<code>data/plugin_data/astrbot_plugin_sugarmemory/memory.db</code>。备份就是复制这个文件，换机器带走也是它。</p>
+                  <table class="doctab">
+                    <tr><th>表</th><th>存什么</th></tr>
+                    <tr><td><code>l3_events</code></td><td>事件流。原始聊天（<code>event_type=chat</code>）和会话摘要（<code>session_summary</code>）都在这里，靠类型区分</td></tr>
+                    <tr><td><code>l2_facts</code></td><td>长期事实：谁 · 什么属性 · 什么值 · 谁说的 · 置信度 · 指纹</td></tr>
+                    <tr><td><code>gate_audit</code></td><td>门控审计：每条候选事实为什么被收下或被拒</td></tr>
+                    <tr><td><code>people</code></td><td>一个人一行：规范名 + 绑定的 QQ</td></tr>
+                    <tr><td><code>person_alias</code></td><td>称呼表：每个写法指向一个人（另存读音键，只用于「疑似同一人」提示）</td></tr>
+                    <tr><td><code>affinity</code></td><td>每人一个好感度分（当前值 + 累计获得）</td></tr>
+                    <tr><td><code>affinity_stages</code></td><td>阶段表：名字 + 阈值，面板可改</td></tr>
+                    <tr><td><code>social_relations</code></td><td>有向关系边：<code>source</code> 认为 <code>target</code> 是 <code>relation</code></td></tr>
+                    <tr><td><code>relation_evidence</code></td><td>关系原话证据，一条关系可以挂多条</td></tr>
+                    <tr><td><code>token_usage</code></td><td>每次模型调用的账：模块、真实还是估算、输入 / 缓存 / 输出</td></tr>
+                    <tr><td><code>tool_idem</code></td><td>幂等锁，工具写操作的指纹和时间戳</td></tr>
+                    <tr><td><code>circuit</code></td><td>熔断状态，落库所以重载插件不会清零</td></tr>
+                  </table>
+                  <p class="sub">表是插件启动时 <code>CREATE TABLE IF NOT EXISTS</code> 自动建的，升级时只加列不删列，老库不会崩。</p>
+                </div>
+
+                <div class="docsec" id="d7">
+                  <h3><em>02</em>工具调用的几道闸</h3>
+                  <p>写数据是唯一有破坏性的动作，所以从「AI 想写」到「真的写进去」之间排了六道闸，任何一道拒了都写不成。</p>
+                  <table class="doctab">
+                    <tr><th>闸</th><th>拦什么</th><th>实现</th></tr>
+                    <tr><td>① 开关</td><td>整个工具不让用</td><td>发请求前把工具从工具箱里摘掉，模型根本看不见它</td></tr>
+                    <tr><td>② 身份</td><td>谁能用</td><td>平台管理员，或填进「额外授权名单」的号</td></tr>
+                    <tr><td>③ 范围</td><td>路人借 AI 改别人的关系</td><td>非主人只能改「含他本人」的边，碰不到两个第三人之间的</td></tr>
+                    <tr><td>④ 原话</td><td>AI 被读到的文字骗</td><td>想记的两个名字至少一个要出现在你这条消息里，否则软拒并让 AI 回头问你</td></tr>
+                    <tr><td>⑤ 幂等</td><td>模型重试写好多遍</td><td>指纹 + 时间窗，重复的直接当成功返回，不再落库</td></tr>
+                    <tr><td>⑥ 熔断</td><td>一直失败还一直烧钱</td><td>连续失败 3 次进 600 秒冷却（都可改），冷却完放一次探测，成功即恢复</td></tr>
+                  </table>
+                  <p>第 ④ 道是<b>软拒绝</b>：不报错，只回一句「这两人本轮没提到，先跟他确认」。AI 收到通常会回头追问一次，而不是把错误当成故障抛给你。</p>
+                  <div class="doccall">第 ④ 道拦不住「你自己转述别人的话」——那种情况下两个名字都在你的原话里，属于你说的，照记。它只解决「AI 把读到的内容当成你授权的」。</div>
+                </div>
+
+                <div class="docsec" id="d9">
+                  <h3><em>03</em>Token 统计</h3>
+                  <p>每次模型调用落一行账，记模块、来源、输入 / 缓存 / 输出三段。</p>
+                  <ul>
+                    <li><b>真实值</b>：普通对话和阶段总结拿得到模型返回的用量，标 <code>actual</code></li>
+                    <li><b>估算值</b>：记忆包、关系快照不单独发请求，只能在拼装时按字数估，标 <code>estimate</code></li>
+                    <li><b>缓存命中恒为 0</b>：框架只认 OpenAI 格式的 <code>prompt_tokens_details.cached_tokens</code>，而 DeepSeek 把命中数放在顶层 <code>prompt_cache_hit_tokens</code>，框架没读，插件拿不到</li>
+                  </ul>
+                  <p>面板里能看总量、24 小时、7 天、30 天，各模块占比，以及最近的逐条调用。清空是两步确认，防止手滑。</p>
+                </div>
+
+                <div class="docsec" id="d10">
+                  <h3><em>04</em>文件与接口</h3>
+                  <table class="doctab">
+                    <tr><th>文件</th><th>职责</th></tr>
+                    <tr><td><code>main.py</code></td><td>插件主体：消息钩子、两个工具、Web 接口、配置读写</td></tr>
+                    <tr><td><code>_conf_schema.json</code></td><td>AstrBot 官方配置页的字段表，从代码里的配置表自动生成</td></tr>
+                    <tr><td><code>pages/记忆中枢/index.html</code></td><td>面板，单文件无构建，改完刷新就生效</td></tr>
+                    <tr><td><code>core/store.py</code></td><td>建表、迁移、所有 SQL</td></tr>
+                    <tr><td><code>core/pack.py</code></td><td>记忆包检索、打分、裁剪</td></tr>
+                    <tr><td><code>core/injector.py</code></td><td>token 估算与注入文本渲染</td></tr>
+                    <tr><td><code>core/social.py</code></td><td>好感度公式、关系快照、语气映射</td></tr>
+                    <tr><td><code>core/gate.py</code></td><td>写入门控，决定一条候选事实能不能落库</td></tr>
+                    <tr><td><code>core/summarize_core.py</code></td><td>总结结果的 JSON 解析与写库</td></tr>
+                  </table>
+                  <p><b>接口</b>都挂在 <code>/api/plug/astrbot_plugin_sugarmemory</code> 下面，分成几组：总览与用户（<code>overview / subjects / user</code>）、记忆读写（<code>l2 / l3 / pack / summarize</code>）、人物身份（<code>people*</code>，含绑定 QQ / 加称呼 / 合并 / 重新识别）、好感度（<code>affinity*</code>）、关系（<code>relations*</code>）、配置（<code>config</code>）、用量（<code>tokens</code>）。面板只调这些，没有别的后门。</p>
+                </div>
+
+                <div class="docsec" id="d11">
+                  <h3><em>05</em>已知限制</h3>
+                  <ul>
+                    <li><b>群聊没有说话人归属</b>，所以只读。这不是没做完，是不打算做</li>
+                    <li><b>记忆包只按人隔离</b>。群里 A 提到 B 的事情，存下来挂在 B 名下，不会注入给 A</li>
+                    <li><b>拿不到缓存命中数</b>，是框架层的解析问题，插件这边补不了</li>
+                    <li><b>检索不懂同义</b>，2-gram 只认字面重合</li>
+                    <li><b>总结是单次调用</b>。返回的 JSON 解析失败会退避重试 3 次，三次都不行就跳过这一批，等下一批</li>
+                    <li><b>面板里没有弹窗</b>。沙箱禁了系统的 alert / confirm，所以危险操作都是「点两次」确认</li>
+                  </ul>
+                </div>
+
+                <div class="docsec" id="d13">
+                  <h3><em>06</em>配置到底该在哪改</h3>
+                  <p>有 <b>两个入口</b>，改的是同一个配置文件，但生效方式不一样，别弄混：</p>
+                  <table class="doctab">
+                    <tr><th>入口</th><th>生效</th><th>说明写在哪</th></tr>
+                    <tr><td>本面板<b>「设置 → 配置项」</b></td><td><b>立刻</b>，没有保存按钮</td><td>每项下面都有一行白话解释</td></tr>
+                    <tr><td>AstrBot 官方插件配置页</td><td>要<b>保存 + 重载插件</b>，只保存不重载跑的还是旧值</td><td>也是白话解释，但分组按框架的方式展开</td></tr>
+                  </table>
+                  <p><b>建议一律在本面板里改</b>，尤其是这几组：记忆、注入、总结、好感度、主人权限。原因很实际：在这里改完立刻生效，你可以马上发一句话看效果；在官方页改完要重载，重载前那段时间面板显示的是新值、插件用的还是旧值，很容易以为「改了没用」。</p>
+                  <div class="doccall">官方那个配置页只当兜底用：插件没启动、面板打不开、或者你把「记录聊天」关错了导致面板没数据的时候，才去那边改。</div>
+                  <p>另外，官方配置页最顶上有条提示项（一项空字符串，叫「先读我」），它不参与任何逻辑，就是提醒你这件事，<b>不用填、也不用管</b>。</p>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const API = '/api/plug/astrbot_plugin_sugarmemory';
+const API_PREFIX_PATH = 'api/';
+
+const state = {
+  subject: null,
+  view: 'user',
+  tab: 'chat',
+  q2: '', q3: '', t3: '',
+  l2: [], l3: [], summaries: [],
+  stats: null,
+  subjects: [],
+  editing: null,
+  l2open: {}, dayOpen: {}, convOpen: {}, sumDayOpen: {}, catOpen: {},
+  l2view: 'summary',
+  loadedFor: undefined,
+};
+
+async function bridge() {
+  for (let i = 0; i < 40; i++) {
+    const b = window.AstrBotPluginView || window.AstrBotPluginPage;
+    if (b) {
+      try { await Promise.race([b.ready(), new Promise(r => setTimeout(r, 1500))]); } catch (e) {}
+      return b;
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return null;
+}
+
+async function apiGet(path, params) {
+  const b = await bridge();
+  if (b) { try { return await b.apiGet(path, params); } catch (e) {} }
+  const qs = params ? '?' + new URLSearchParams(params) : '';
+  const j = await (await fetch(API + '/' + path + qs)).json();
+  if (j.status === 'error') throw new Error(j.message || '请求失败');
+  return j.data ?? j;
+}
+
+async function apiPost(path, body) {
+  const b = await bridge();
+  if (b) { try { return await b.apiPost(path, body || {}); } catch (e) {} }
+  const j = await (await fetch(API + '/' + path, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {})
+  })).json();
+  if (j.status === 'error') throw new Error(j.message || '请求失败');
+  return j.data ?? j;
+}
+
+function toast(msg, bad) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.style.borderColor = bad ? 'var(--bad)' : 'var(--line)';
+  t.style.display = 'block';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.display = 'none'; }, 2400);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(Number(ts) * 1000), p = n => String(n).padStart(2, '0');
+  return `${d.getMonth()+1}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function fmtHM(ts) {
+  if (!ts) return '';
+  const d = new Date(Number(ts) * 1000), p = n => String(n).padStart(2, '0');
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function cleanName(s) {
+  return String(s ?? '').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '').trim();
+}
+function labelOf(s) { return s ? cleanName(s) : '未归类'; }
+function initialOf(s) { return s ? (cleanName(s) || String(s)).slice(0, 1) : '?'; }
+
+/* 人名归一键：和后端 store.alias_key 同一套规则。
+   同一个人被写成「小刚」和「小刚（蔗糖）」时，这个键相同。 */
+function aliasKey(s) {
+  let t = String(s ?? '').replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF\u115F\u1160\u3164\uFFA0]/g, '');
+  t = t.normalize('NFKC');
+  t = t.replace(/[\(（\[\【\{｛][^\)）\]\】\}｝]{0,24}[\)）\]\】\}｝]/g, '');
+  t = (t.trim() || String(s ?? '')).replace(/\s+/g, ' ').trim();
+  return t.toLowerCase();
+}
+function samePerson(a, b) {
+  if (!a || !b) return a === b;
+  return a === b || aliasKey(a) === aliasKey(b);
+}
+
+/* 关系图/名单用的节点列表：把同一个人的几种写法并成一个。
+   保留哪个写法：优先没带括号备注的那一个，其次边多的，再其次名字短的。 */
+function relNodes() {
+  const map = new Map();
+  for (const n of (relGraph.nodes || [])) {
+    const k = aliasKey(n.subject);
+    let g = map.get(k);
+    if (!g) { g = { key: k, names: [], degree: 0, xp: 0 }; map.set(k, g); }
+    g.names.push({ name: n.subject, degree: n.degree || 0 });
+    g.degree += n.degree || 0;
+    g.xp = Math.max(g.xp, n.xp || 0);
+  }
+  const out = [];
+  for (const g of map.values()) {
+    const plain = x => (aliasKey(x.name) === x.name.trim().toLowerCase() ? 0 : 1);
+    g.names.sort((a, b) => (plain(a) - plain(b)) ||
+      (b.degree - a.degree) || (a.name.length - b.name.length));
+    g.subject = g.names[0].name;
+    g.aliases = g.names.map(x => x.name);
+    out.push(g);
+  }
+  out.sort((a, b) => (b.degree - a.degree) || (b.xp - a.xp) ||
+    String(a.subject).localeCompare(String(b.subject)));
+  return out;
+}
+
+/* ---------------- 左侧：用户列表 ---------------- */
+
+async function loadSubjects(keep) {
+  try {
+    const d = await apiGet('api/subjects');
+    state.subjects = d.items || [];
+    renderUsers();
+    if (!keep) {
+      if (!state.subjects.length) { selectUser(null); return; }
+      const hit = state.subjects.find(x => x.l2 || x.l3);
+      selectUser(hit ? hit.subject : state.subjects[0].subject);
+    } else if (state.subject !== null && !state.subjects.some(x => x.subject === state.subject)) {
+      selectUser(state.subjects.length ? state.subjects[0].subject : null);
+    }
+  } catch (e) {
+    $('#users').innerHTML = '<div class="empty">加载失败：' + esc(e.message || e) + '</div>';
+  }
+}
+
+function renderUsers() {
+  const box = $('#users');
+  const kw = $('#search').value.trim().toLowerCase();
+  const items = state.subjects.filter(u => !kw || labelOf(u.subject).toLowerCase().includes(kw));
+  if (!items.length) {
+    box.innerHTML = `<div class="empty" style="padding:36px 0">${state.subjects.length ? '没有匹配的人' : '还没有任何记忆<small>聊够一轮，这里就会长出用户</small>'}</div>`;
+    return;
+  }
+  box.innerHTML = '';
+  for (const u of items) {
+    const el = document.createElement('div');
+    el.className = 'usr' + (u.subject === state.subject && state.view === 'user' ? ' act' : '');
+    el.innerHTML = `<div class="av">${esc(initialOf(u.subject))}</div>
+      <div class="uinfo">
+        <div class="un">${esc(labelOf(u.subject))}</div>
+        <div class="um" title="短期记忆条数（摘要）/ 长期记忆条数">短 <b>${u.sum != null ? u.sum : u.l3}</b> 条 · 长 <b>${u.l2}</b>${u.last_at ? ' · ' + fmtTime(u.last_at) : ''}</div>
+      </div>`;
+    el.onclick = () => selectUser(u.subject);
+    box.appendChild(el);
+  }
+}
+
+function selectUser(subject) {
+  state.subject = subject;
+  state.view = 'user';
+  state.editing = null;
+  $('#userView').style.display = 'flex';
+  $('#globalView').style.display = 'none';
+  $('#navAudit').classList.remove('act');
+  $('#navPack').classList.remove('act');
+  $('#navOutbound').classList.remove('act');
+  renderUsers();
+  if (subject === null) {
+    state.stats = null;
+    $('#uname').textContent = '还没有用户';
+    $('#umeta').textContent = '等 AI 记下第一条关于某人的事，这里就会出现 Ta';
+    $('#nsum').textContent = '0';
+    $('#n2').textContent = '0';
+    $('#n3').textContent = '0';
+    $('#listSum').innerHTML = '<div class="empty">空的</div>';
+    $('#list2').innerHTML = '<div class="empty">空的</div>';
+    $('#list3').innerHTML = '<div class="empty">空的</div>';
+    return;
+  }
+  loadUser();
+}
+
+/* ---------------- 右侧：单个用户 ---------------- */
+
+async function loadUser() {
+  if (state.subject === null) return;
+  const subject = state.subject;
+  $('#uname').textContent = labelOf(subject);
+  $('#uav').textContent = initialOf(subject);
+  $('#listSum').innerHTML = '<div class="empty">加载中…</div>';
+  $('#list2').innerHTML = '<div class="empty">加载中…</div>';
+  $('#list3').innerHTML = '<div class="empty">加载中…</div>';
+  try {
+    const d = await apiGet('api/user', { subject });
+    if (state.subject !== subject) return;
+    if (state.loadedFor !== subject) {
+      state.l2open = {}; state.dayOpen = {}; state.convOpen = {}; state.sumDayOpen = {};
+      state.loadedFor = subject;
+    }
+    state.l2 = d.l2 || [];
+    state.l3 = d.l3 || [];
+    state.summaries = d.summaries || [];
+    state.stats = {
+      sums: state.summaries.length,
+      chats: state.l3.filter(r => r.event_type !== 'session_summary').length,
+      l2: state.l2.length,
+    };
+    $('#umeta').textContent =
+      `短期 ${state.stats.sums} 条 · 长期 ${state.stats.l2} 条 · 聊天 ${state.stats.chats} 条记录`;
+    renderSummary();
+    renderL2();
+    renderL3();
+  } catch (e) {
+    $('#list2').innerHTML = '<div class="empty">加载失败：' + esc(e.message || e) + '</div>';
+    $('#list3').innerHTML = '<div class="empty">加载失败：' + esc(e.message || e) + '</div>';
+  }
+}
+
+function filteredL2() {
+  const q = state.q2.trim().toLowerCase();
+  if (!q) return state.l2;
+  return state.l2.filter(r => `${r.predicate} ${r.value} ${r.source_quote}`.toLowerCase().includes(q));
+}
+
+function renderL2() {
+  const items = filteredL2();
+  $('#n2').textContent = state.l2.length;
+  const box = $('#list2');
+  if (!items.length) {
+    $('#h2').textContent = '';
+    box.innerHTML = state.l2.length
+      ? '<div class="empty">没有匹配的内容</div>'
+      : '<div class="empty">这个人还没有长期记忆<small>等一轮阶段总结，或者点右上角手动加一条</small></div>';
+    return;
+  }
+  if (state.l2view === 'category') {
+    renderL2ByCategory(items, box);
+  } else {
+    renderL2BySummary(items, box);
+  }
+}
+
+function renderL2BySummary(items, box) {
+  const groups = new Map();
+  for (const r of items) {
+    const k = Number(r.source_summary_id) || 0;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const smap = new Map(state.summaries.map(s => [Number(s.id), s]));
+  const keys = [...groups.keys()].sort((a, b) => {
+    if (a === 0) return 1;
+    if (b === 0) return -1;
+    const ta = Number((smap.get(a) || {}).created_at) || 0;
+    const tb = Number((smap.get(b) || {}).created_at) || 0;
+    return tb - ta;
+  });
+  $('#h2').textContent = `${items.length} 条 · ${keys.length} 组`;
+  box.innerHTML = '';
+  keys.forEach((k) => box.appendChild(groupL2(k, groups.get(k), smap.get(k), false)));
+}
+
+function renderL2ByCategory(items, box) {
+  const order = ['自我相关', '爱好技能', '生活习惯', '经历', '打算', '评价认为', '其他'];
+  const groups = new Map();
+  for (const r of items) {
+    const k = r.predicate || '其他';
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const smap = new Map(state.summaries.map(s => [Number(s.id), s]));
+  const keys = [...groups.keys()].sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    if (ia >= 0 && ib >= 0) return ia - ib;
+    if (ia >= 0) return -1;
+    if (ib >= 0) return 1;
+    return a.localeCompare(b, 'zh');
+  });
+  $('#h2').textContent = `${items.length} 条 · ${keys.length} 个分类`;
+  box.innerHTML = '';
+  keys.forEach((k) => box.appendChild(catL2(k, groups.get(k), smap)));
+}
+
+function catL2(predicate, rows, smap) {
+  const el = document.createElement('div');
+  el.className = 'catgrp';
+  const open = state.catOpen[predicate] ?? true;
+  state.catOpen[predicate] = open;
+  el.innerHTML = `
+    <div class="cathead${open ? ' open' : ''}">
+      <span class="chev">›</span>
+      <span class="catname">${esc(predicate)}</span>
+      <span class="catcount">${rows.length} 条</span>
+    </div>
+    <div class="catbody${open ? ' open' : ''}"></div>`;
+  const head = el.querySelector('.cathead');
+  const body = el.querySelector('.catbody');
+  // 组内按总结时间倒序（最近总结的在上）
+  const sorted = [...rows].sort((a, b) => {
+    const ta = Number((smap.get(Number(a.source_summary_id) || 0) || {}).created_at) || Number(a.created_at) || 0;
+    const tb = Number((smap.get(Number(b.source_summary_id) || 0) || {}).created_at) || Number(b.created_at) || 0;
+    return tb - ta;
+  });
+  for (const r of sorted) body.appendChild(cardL2(r, true));
+  head.onclick = () => {
+    const next = !body.classList.contains('open');
+    state.catOpen[predicate] = next;
+    head.classList.toggle('open', next);
+    body.classList.toggle('open', next);
+  };
+  return el;
+}
+
+function groupL2(key, rows, summary, defaultOpen) {
+  const el = document.createElement('div');
+  el.className = 'grp';
+  const open = state.l2open[key] ?? defaultOpen;
+  state.l2open[key] = open;
+  let title, sub;
+  if (key) {
+    title = summary
+      ? `${fmtTime(summary.created_at)} 的对话总结`
+      : '某次对话总结（正文已被清理）';
+    sub = summary ? (summary.content || '').slice(0, 90) : `来源总结 #${key} 已不在库中`;
+  } else {
+    title = '手动添加 / 早期记忆';
+    sub = '面板手动补的，或没有关联到某次总结的条目';
+  }
+  el.innerHTML = `
+    <div class="grphead${open ? ' open' : ''}">
+      <span class="chev">›</span>
+      <div class="grpinfo">
+        <div class="grptitle">${esc(title)}</div>
+        <div class="grpsub">${esc(sub)}</div>
+      </div>
+      <span class="grpcount">${rows.length} 条</span>
+    </div>
+    <div class="grpbody${open ? ' open' : ''}"></div>`;
+  const head = el.querySelector('.grphead');
+  const body = el.querySelector('.grpbody');
+  for (const r of rows) body.appendChild(cardL2(r));
+  head.onclick = () => {
+    const next = !body.classList.contains('open');
+    state.l2open[key] = next;
+    head.classList.toggle('open', next);
+    body.classList.toggle('open', next);
+  };
+  return el;
+}
+
+function cardL2(r, showTime) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  const isManual = r.source_type === 'manual';
+  // 来源总结的时间（用于分类视图里的小标注）
+  const sid = Number(r.source_summary_id) || 0;
+  const sum = sid ? state.summaries.find(s => Number(s.id) === sid) : null;
+  const sumTime = sum ? fmtTime(sum.created_at) : (isManual ? '' : '');
+  card.innerHTML = `
+    <div class="fact">
+      <div class="t">${showTime ? '' : `<b>${esc(r.predicate)}</b>：`}${esc(r.value)}<span class="id">#${r.id}</span></div>
+      <div class="m">把握 ${Math.round(Number(r.confidence) * 100)}% · 确认过 ${r.stability} 次
+        ${showTime && sumTime ? '· 总结于 ' + esc(sumTime) : ''}
+        ${r.source_quote ? '· 原话 <em>「' + esc(r.source_quote) + '」</em>' : ''}
+        ${isManual ? '· <span class="manual">手动添加</span>' : ''}</div>
+      <div class="chain" style="display:none"></div>
+    </div>
+    <div class="acts">
+      <button class="btn mini" data-a="edit">编辑</button>
+      <button class="btn mini" data-a="chain">来历</button>
+      <button class="btn mini danger" data-a="del">删除</button>
+    </div>`;
+  const fact = card.querySelector('.fact');
+  const chainBox = card.querySelector('.chain');
+  const acts = card.querySelector('.acts');
+
+  card.querySelector('[data-a="chain"]').onclick = async () => {
+    if (chainBox.style.display !== 'none') { chainBox.style.display = 'none'; return; }
+    chainBox.textContent = '查…';
+    chainBox.style.display = 'block';
+    try {
+      const ch = (await apiGet('api/chain', { id: r.id })).chain || [];
+      chainBox.innerHTML = ch.length
+        ? '变更记录：<br>' + ch.map(c => `<b>#${c.id}</b> ${esc(c.predicate)}：${esc(c.value)}（${c.status === 'active' ? '现行' : '已被取代'}）`).join('<br>')
+        : '没有修订过，从写下就是这条。';
+    } catch (e) { chainBox.textContent = '查询失败：' + (e.message || e); }
+  };
+
+  card.querySelector('[data-a="edit"]').onclick = () => {
+    const wrap = document.createElement('div');
+    wrap.className = 'editor';
+    const CATS = ['自我相关', '爱好技能', '生活习惯', '经历', '打算', '评价认为', '其他'];
+    const catOpts = CATS.map(c => `<option value="${c}"${c === r.predicate ? ' selected' : ''}>${c}</option>`).join('');
+    wrap.innerHTML = `
+      <label>分类</label>
+      <select data-f="predicate">${catOpts}</select>
+      <label>内容</label>
+      <textarea data-f="value">${esc(r.value)}</textarea>
+      <div class="line"><div class="w"><label>把握（0-100）</label>
+        <input data-f="confidence" type="number" min="0" max="100" value="${Math.round(Number(r.confidence) * 100)}"></div></div>
+      <div class="send">
+        <button class="btn primary mini" data-a="save">保存</button>
+        <button class="btn mini" data-a="cancel">取消</button>
+      </div>`;
+    fact.style.display = 'none';
+    acts.style.display = 'none';
+    card.appendChild(wrap);
+    const predEl = wrap.querySelector('[data-f="predicate"]');
+    predEl.focus();
+    wrap.querySelector('[data-a="cancel"]').onclick = () => { wrap.remove(); fact.style.display = ''; acts.style.display = ''; };
+    wrap.querySelector('[data-a="save"]').onclick = async (ev) => {
+      const btn = ev.currentTarget;
+      const predicate = predEl.value.trim();
+      const value = wrap.querySelector('[data-f="value"]').value.trim();
+      const confRaw = Number(wrap.querySelector('[data-f="confidence"]').value);
+      if (!predicate || !value) { toast('谓词和内容都不能空着', true); return; }
+      btn.disabled = true; btn.textContent = '保存中…';
+      try {
+        await apiPost('api/l2/update', {
+          id: r.id, predicate, value,
+          confidence: Number.isFinite(confRaw) ? Math.max(0, Math.min(100, confRaw)) / 100 : undefined,
+        });
+        toast('已更新 #' + r.id);
+        await loadUser(); await loadSubjects(true);
+      } catch (e) {
+        toast(e.message || '保存失败', true);
+        btn.disabled = false; btn.textContent = '保存';
+      }
+    };
+  };
+
+  bindDelete(card.querySelector('[data-a="del"]'), () => apiPost('api/delete', { id: r.id }), () => {
+    card.style.opacity = '.35';
+    toast('已删除 #' + r.id);
+    loadUser(); loadSubjects(true);
+  });
+  return card;
+}
+
+/* ---------------- 短期记忆 ---------------- */
+
+const L3_META = {
+  user_message: ['user', '用户'],
+  bot_reply: ['ai', 'AI'],
+  session_summary: ['sum', '总结'],
+  demoted_candidate: ['demo', '降级'],
+  manual_note: ['note', '备注'],
+};
+
+function parseL3(r) {
+  const raw = String(r.content || '').replace(/\s*\[MSG_ID:[^\]]*\]\s*$/, '');
+  const m = /^\[(群|私)\]\s*([^:：]{1,40})[:：]\s*/.exec(raw);
+  if (m) return { scope: m[1], body: raw.slice(m[0].length) };
+  const b = /^\[你\]\s*/.exec(raw);
+  if (b) return { scope: '', body: raw.slice(b[0].length) };
+  return { scope: '', body: raw };
+}
+
+function filteredL3() {
+  const q = state.q3.trim().toLowerCase();
+  return state.l3.filter(r => {
+    if (r.event_type === 'session_summary') return false;
+    if (state.t3 && r.event_type !== state.t3) return false;
+    if (!q) return true;
+    return (r.content || '').toLowerCase().includes(q);
+  });
+}
+
+/* ---------------- 短期记忆：摘要 ---------------- */
+
+function fmtFull(ts) {
+  const d = new Date(Number(ts) * 1000), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function renderSummary() {
+  const box = $('#listSum');
+  const rows = [...state.summaries].sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+  $('#nsum').textContent = rows.length;
+  if (!rows.length) {
+    box.innerHTML = '<div class="empty">这个人还没有摘要<small>每 50 条消息总结一次，也可以点右上角手动总结</small></div>';
+    return;
+  }
+  const days = new Map();
+  for (const r of rows) {
+    const k = dayKeyOf(r.created_at);
+    if (!days.has(k)) days.set(k, []);
+    days.get(k).push(r);
+  }
+  const keys = [...days.keys()].sort().reverse();
+  box.innerHTML = '';
+  for (const dk of keys) {
+    const list = days.get(dk);
+    const open = state.sumDayOpen[dk] ?? false;
+    state.sumDayOpen[dk] = open;
+    const dayEl = document.createElement('div');
+    dayEl.className = 'day';
+    dayEl.innerHTML = `
+      <div class="dayhead${open ? ' open' : ''}">
+        <span class="chev">›</span>
+        <span class="dayname">${esc(dayLabel(dk))}</span>
+        <span class="daydate">${esc(dk.replace(/-/g, '/'))}</span>
+        <span class="daymeta">${list.length} 条摘要</span>
+      </div>
+      <div class="daybody${open ? ' open' : ''}"></div>`;
+    const dh = dayEl.querySelector('.dayhead');
+    const db = dayEl.querySelector('.daybody');
+    for (const r of list) {
+      const el = document.createElement('div');
+      el.className = 'sumcard';
+      el.innerHTML = `
+        <div class="st"><b>${esc(fmtHM(r.created_at))}</b><span>对话总结</span></div>
+        <div class="sv">${esc(r.content || '')}</div>
+        <div class="sm">永久保留 · 长期记忆从这里提炼</div>`;
+      db.appendChild(el);
+    }
+    dh.onclick = () => {
+      const next = !db.classList.contains('open');
+      state.sumDayOpen[dk] = next;
+      dh.classList.toggle('open', next);
+      db.classList.toggle('open', next);
+    };
+    box.appendChild(dayEl);
+  }
+}
+
+const CONV_GAP_MS = 30 * 60 * 1000;
+
+function dayKeyOf(ts) {
+  const d = new Date(Number(ts) * 1000), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+function dayLabel(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((today - dt) / 86400000);
+  if (diff === 0) return '今天';
+  if (diff === 1) return '昨天';
+  if (diff === 2) return '前天';
+  return `${m} 月 ${d} 日`;
+}
+
+/* 一次对话 = 间隔不超过 30 分钟、且会话未切换的一串消息 */
+function buildConvs(rows) {
+  const msgs = rows.filter(r => r.event_type !== 'session_summary')
+    .sort((a, b) => a.created_at - b.created_at || a.id - b.id);
+  const sums = rows.filter(r => r.event_type === 'session_summary')
+    .sort((a, b) => a.created_at - b.created_at || a.id - b.id);
+  const convs = [];
+  let cur = null;
+  for (const r of msgs) {
+    const gap = cur ? (r.created_at - cur.end_at) * 1000 : 0;
+    const switched = cur && cur.session_id && r.session_id && cur.session_id !== r.session_id;
+    if (!cur || gap > CONV_GAP_MS || switched) {
+      cur = { key: 'c' + r.id, session_id: r.session_id || '', start_at: r.created_at,
+        end_at: r.created_at, rows: [] };
+      convs.push(cur);
+    }
+    cur.rows.push(r);
+    cur.end_at = Math.max(cur.end_at, r.created_at);
+    if (!cur.session_id) cur.session_id = r.session_id || '';
+  }
+  for (const s of sums) {
+    let target = null;
+    for (const c of convs) {
+      if (c.end_at <= s.created_at + 300 && s.created_at - c.end_at <= 86400) target = c;
+    }
+    if (target) {
+      target.rows.push(s);
+      target.rows.sort((a, b) => a.created_at - b.created_at || a.id - b.id);
+      target.end_at = Math.max(target.end_at, s.created_at);
+    } else {
+      convs.push({ key: 's' + s.id, session_id: s.session_id || '', start_at: s.created_at,
+        end_at: s.created_at, rows: [s], summaryOnly: true });
+    }
+  }
+  /* 段落按时间正序：最早的一段在最上面，往下滚是越来越新的内容 */
+  return convs.sort((a, b) => a.end_at - b.end_at);
+}
+
+function renderL3() {
+  const items = filteredL3();
+  const chatTotal = state.l3.filter(r => r.event_type !== 'session_summary').length;
+  $('#n3').textContent = state.stats ? state.stats.chats : chatTotal;
+  const box = $('#list3');
+  if (!items.length) {
+    $('#h3').textContent = '';
+    box.innerHTML = chatTotal
+      ? '<div class="empty">没有匹配的记录</div>'
+      : '<div class="empty">还没有聊天记录<small>这个人下次说话，这里就会自动出现</small></div>';
+    return;
+  }
+  const convs = buildConvs(items);
+  const days = new Map();
+  for (const c of convs) {
+    const k = dayKeyOf(c.start_at);
+    if (!days.has(k)) days.set(k, []);
+    days.get(k).push(c);
+  }
+  /* 日期分组倒序：最近的一天在最上面，往下滚是越来越旧 */
+  const keys = [...days.keys()].sort().reverse();
+  $('#h3').textContent = `${items.length} 条 · ${convs.length} 段对话`;
+
+  box.innerHTML = '';
+  for (const dk of keys) {
+    const list = days.get(dk);
+    const total = list.reduce((n, c) => n + c.rows.length, 0);
+    const open = state.dayOpen[dk] ?? false;
+    state.dayOpen[dk] = open;
+    const dayEl = document.createElement('div');
+    dayEl.className = 'day';
+    dayEl.innerHTML = `
+      <div class="dayhead${open ? ' open' : ''}">
+        <span class="chev">›</span>
+        <span class="dayname">${esc(dayLabel(dk))}</span>
+        <span class="daydate">${esc(dk.replace(/-/g, '/'))}</span>
+        <span class="daymeta">${list.length} 段 · ${total} 条</span>
+      </div>
+      <div class="daybody${open ? ' open' : ''}"></div>`;
+    const dh = dayEl.querySelector('.dayhead');
+    const db = dayEl.querySelector('.daybody');
+    // 同一天内，最近的一段对话在最上面
+    const convsDesc = [...list].reverse();
+    for (const c of convsDesc) db.appendChild(convEl(c, false));
+    dh.onclick = () => {
+      const next = !db.classList.contains('open');
+      state.dayOpen[dk] = next;
+      dh.classList.toggle('open', next);
+      db.classList.toggle('open', next);
+    };
+    box.appendChild(dayEl);
+  }
+}
+
+/* 对话内顺序：按「一轮」正序 —— 每轮里用户的话在 AI 回复上面，往下读越来越新 */
+function roundsAsc(rows) {
+  const asc = [...rows].sort((a, b) =>
+    (Number(a.created_at) || 0) - (Number(b.created_at) || 0) || (Number(a.id) || 0) - (Number(b.id) || 0));
+  const blocks = [];
+  let cur = null;
+  for (const r of asc) {
+    const isUser = r.event_type === 'user_message';
+    if (!cur || (isUser && cur.hasUser)) {
+      cur = { hasUser: false, rows: [] };
+      blocks.push(cur);
+    }
+    cur.rows.push(r);
+    if (isUser) cur.hasUser = true;
+  }
+  return blocks.flatMap(b => b.rows);
+}
+
+function convEl(c, defaultOpen) {
+  const el = document.createElement('div');
+  el.className = 'conv';
+  const open = state.convOpen[c.key] ?? defaultOpen;
+  state.convOpen[c.key] = open;
+  /* 标题上显示「最新一句」，收起时也能一眼看到这段聊到哪了 */
+  let lastUser = null, lastAny = null;
+  for (const r of c.rows) {
+    lastAny = r;
+    if (r.event_type === 'user_message') lastUser = r;
+  }
+  const headMsg = lastUser || lastAny;
+  const scope = headMsg ? parseL3(headMsg).scope : '';
+  const preview = headMsg ? parseL3(headMsg).body : '';
+  const range = c.start_at === c.end_at
+    ? fmtHM(c.start_at) : `${fmtHM(c.start_at)}–${fmtHM(c.end_at)}`;
+  el.innerHTML = `
+    <div class="convhead${open ? ' open' : ''}">
+      <span class="chev">›</span>
+      <span class="convtime">${esc(range)}</span>
+      ${scope ? `<span class="chip scope">${esc(scope)}</span>` : ''}
+      <span class="convprev">${esc((preview || '').slice(0, 60))}</span>
+      <span class="convmeta">${c.rows.length} 条</span>
+    </div>
+    <div class="convbody${open ? ' open' : ''}"></div>`;
+  const head = el.querySelector('.convhead');
+  const body = el.querySelector('.convbody');
+  for (const r of roundsAsc(c.rows)) body.appendChild(rowL3(r));
+  head.onclick = () => {
+    const next = !body.classList.contains('open');
+    state.convOpen[c.key] = next;
+    head.classList.toggle('open', next);
+    body.classList.toggle('open', next);
+  };
+  return el;
+}
+
+function rowL3(r) {
+  const el = document.createElement('div');
+  el.className = 'row' + (r.event_type === 'session_summary' ? ' sumrow' : '');
+  const [cls, tag] = L3_META[r.event_type] || ['note', r.event_type];
+  const p = parseL3(r);
+  el.innerHTML = `
+    <span class="chip ${cls}">${esc(tag)}</span>
+    ${p.scope ? `<span class="chip scope">${esc(p.scope)}</span>` : ''}
+    <span class="body">${esc(p.body)}</span>
+    <span class="time">${fmtHM(r.created_at)}</span>
+    <span class="acts">
+      <button class="btn mini" data-a="edit">编辑</button>
+      <button class="btn mini danger" data-a="del">删除</button>
+    </span>`;
+  const bodyEl = el.querySelector('.body');
+  const acts = el.querySelector('.acts');
+
+  el.querySelector('[data-a="edit"]').onclick = () => {
+    const wrap = document.createElement('div');
+    wrap.className = 'editor';
+    wrap.innerHTML = `
+      <textarea data-f="body">${esc(p.body)}</textarea>
+      <div class="send">
+        <button class="btn primary mini" data-a="save">保存</button>
+        <button class="btn mini" data-a="cancel">取消</button>
+      </div>`;
+    bodyEl.style.display = 'none';
+    acts.style.display = 'none';
+    el.appendChild(wrap);
+    const ta = wrap.querySelector('[data-f="body"]');
+    ta.focus();
+    wrap.querySelector('[data-a="cancel"]').onclick = () => { wrap.remove(); bodyEl.style.display = ''; acts.style.display = ''; };
+    wrap.querySelector('[data-a="save"]').onclick = async (ev) => {
+      const btn = ev.currentTarget;
+      const body = ta.value.trim();
+      if (!body) { toast('内容不能空着', true); return; }
+      let content = body;
+      if (r.event_type === 'user_message') content = `[${p.scope || '群'}] ${state.subject}: ${body}`;
+      else if (r.event_type === 'bot_reply') content = `[你] ${body}`;
+      btn.disabled = true; btn.textContent = '保存中…';
+      try {
+        await apiPost('api/l3/update', { id: r.id, content });
+        toast('已更新 #' + r.id);
+        await loadUser();
+      } catch (e) {
+        toast(e.message || '保存失败', true);
+        btn.disabled = false; btn.textContent = '保存';
+      }
+    };
+  };
+
+  bindDelete(el.querySelector('[data-a="del"]'), () => apiPost('api/l3/delete', { id: r.id }), () => {
+    el.style.opacity = '.35';
+    toast('已删除 #' + r.id);
+    loadUser(); loadSubjects(true);
+  });
+  return el;
+}
+
+/* 两次点击确认，避开沙箱里被禁用的 confirm() */
+function bindDelete(btn, doDelete, after) {
+  let armed = false, timer = null;
+  btn.onclick = async () => {
+    if (!armed) {
+      armed = true;
+      btn.classList.add('arm');
+      btn.textContent = '确定删？';
+      timer = setTimeout(() => {
+        armed = false; btn.classList.remove('arm'); btn.textContent = '删除';
+      }, 3000);
+      return;
+    }
+    clearTimeout(timer);
+    btn.disabled = true;
+    btn.textContent = '删除中…';
+    try {
+      const r = await doDelete();
+      after(r);
+    } catch (e) {
+      toast(e.message || '删除失败', true);
+      btn.disabled = false; btn.textContent = '删除';
+    }
+  };
+}
+
+/* ---------------- 增删改表单 ---------------- */
+
+$('#addL2').onclick = () => {
+  if (state.subject === null) { toast('先选一个用户', true); return; }
+  state.tab = 'l2'; switchTab('l2');
+  const box = $('#add2box');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if (box.style.display === 'block') {
+    $('#n2pred').value = '自我相关'; $('#n2val').value = ''; $('#n2conf').value = '90';
+    $('#n2val').focus();
+  }
+};
+$('#n2cancel').onclick = () => { $('#add2box').style.display = 'none'; };
+$('#n2save').onclick = async (ev) => {
+  const btn = ev.currentTarget;
+  const predicate = $('#n2pred').value.trim();
+  const value = $('#n2val').value.trim();
+  const conf = Number($('#n2conf').value);
+  if (!predicate || !value) { toast('谓词和内容都要写', true); return; }
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    await apiPost('api/l2/add', {
+      subject: state.subject, predicate, value,
+      confidence: Number.isFinite(conf) ? Math.max(0, Math.min(100, conf)) / 100 : 0.9,
+    });
+    $('#add2box').style.display = 'none';
+    toast('已记住');
+    await loadUser(); await loadSubjects(true);
+  } catch (e) {
+    toast(e.message || '保存失败', true);
+  } finally {
+    btn.disabled = false; btn.textContent = '存下来';
+  }
+};
+
+$('#addL3').onclick = () => {
+  if (state.subject === null) { toast('先选一个用户', true); return; }
+  state.tab = 'chat'; switchTab('chat');
+  const box = $('#add3box');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if (box.style.display === 'block') { $('#n3val').value = ''; $('#n3val').focus(); }
+};
+$('#n3cancel').onclick = () => { $('#add3box').style.display = 'none'; };
+$('#n3save').onclick = async (ev) => {
+  const btn = ev.currentTarget;
+  const content = $('#n3val').value.trim();
+  const etype = $('#n3type').value;
+  if (!content) { toast('内容不能空着', true); return; }
+  btn.disabled = true; btn.textContent = '保存中…';
+  try {
+    await apiPost('api/l3/add', { subject: state.subject, content, event_type: etype });
+    $('#add3box').style.display = 'none';
+    toast('已记一笔');
+    await loadUser(); await loadSubjects(true);
+  } catch (e) {
+    toast(e.message || '保存失败', true);
+  } finally {
+    btn.disabled = false; btn.textContent = '存下来';
+  }
+};
+
+/* ---------------- 全局页：审核 / 预览 ---------------- */
+
+function openGlobal(kind) {
+  state.view = kind;
+  $('#userView').style.display = 'none';
+  $('#globalView').style.display = 'flex';
+  $('#navAudit').classList.toggle('act', kind === 'audit');
+  $('#navPack').classList.toggle('act', kind === 'pack');
+  $('#navOutbound').classList.toggle('act', kind === 'outbound');
+  state.editing = null;
+  renderUsers();
+  if (kind === 'audit') {
+    $('#gav').textContent = '审';
+    $('#gname').textContent = '写入审核';
+    $('#gmeta').textContent = '被门控拦下或改写的候选，它们没有进入长期记忆';
+    $('#gbody').innerHTML = '<div class="empty">加载中…</div>';
+    loadAudit();
+  } else if (kind === 'outbound') {
+    $('#gav').textContent = '发';
+    $('#gname').textContent = '转述/外发';
+    $('#gmeta').textContent = 'AI 主动发到各个会话的话：转述带话、定时任务、跨会话通知。AI 换个会话还记得「自己发过什么」，靠的就是这批记录';
+    $('#gbody').innerHTML = `
+      <div class="filterbar" style="margin-bottom:10px">
+        <input type="text" id="obq" placeholder="搜内容…">
+        <span class="hint" id="obhint"></span>
+      </div>
+      <div id="oblist"><div class="empty">加载中…</div></div>`;
+    $('#obq').oninput = loadOutbound;
+    loadOutbound();
+  } else {
+    $('#gav').textContent = '预';
+    $('#gname').textContent = '注入预览';
+    $('#gmeta').textContent = '模拟一句话，看这一刻 AI 会看到什么（不会真的注入）；也能只看这次究竟从记忆库里读了哪些条目（纯本地，不经 LLM）';
+    $('#gbody').innerHTML = `
+      <div class="filterbar" style="margin:0 0 10px">
+        <label style="font-size:12.5px;color:var(--dim)">预览谁：</label>
+        <select id="packSubject" style="flex:1"></select>
+      </div>
+      <textarea class="big" id="query" placeholder="比如：我最近还熬夜吗？"></textarea>
+      <div class="filterbar" style="margin:10px 0 12px">
+        <button class="btn primary" id="packbtn">生成预览</button>
+        <button class="btn" id="detailbtn">只看读取明细</button>
+        <button class="btn" id="sumbtn">手动总结一次</button>
+        <span class="hint" id="packtok"></span>
+      </div>
+      <div class="seg" id="packseg">
+        <button class="segbtn act" data-seg="block">注入原文</button>
+        <button class="segbtn" data-seg="detail">读取明细</button>
+      </div>
+      <pre id="packout">还没生成。</pre>
+      <div id="packdetail" style="display:none"></div>`;
+    fillPackSubjects();
+    $('#packbtn').onclick = genPack;
+    $('#detailbtn').onclick = () => genPack(true);
+    $('#sumbtn').onclick = manualSummary;
+    document.querySelectorAll('#packseg .segbtn').forEach(b => {
+      b.onclick = () => switchPackSeg(b.dataset.seg);
+    });
+  }
+}
+
+async function loadAudit() {
+  try {
+    const items = (await apiGet('api/audit', { limit: 200 })).items || [];
+    $('#auditCount').textContent = items.length || '';
+    const box = $('#gbody');
+    if (!items.length) {
+      box.innerHTML = '<div class="empty">很干净，没有东西被拦<small>说明目前写入长期记忆的内容都没触发门控规则</small></div>';
+      return;
+    }
+    box.innerHTML = '';
+    for (const r of items) {
+      const deny = r.decision === 'deny';
+      const el = document.createElement('div');
+      el.className = 'row';
+      el.innerHTML = `<span class="chip ${deny ? 'deny' : 'rewrite'}">${deny ? '拒绝' : '改写'}</span>
+        <span class="body">${esc(r.candidate)}<div class="why">${esc(r.reason)}</div></span>
+        <span class="time">${fmtTime(r.created_at)}</span>`;
+      box.appendChild(el);
+    }
+  } catch (e) {
+    $('#gbody').innerHTML = '<div class="empty">加载失败：' + esc(e.message || e) + '</div>';
+  }
+}
+
+/* 转述/外发记录：解析「[标签] 正文｜起因：xx」的行格式，按标签分色 */
+function parseOutbound(content) {
+  const raw = String(content || '');
+  const m = /^\[([^\]]+)\]\s*/.exec(raw);
+  const label = m ? m[1] : '';
+  const rest = m ? raw.slice(m[0].length) : raw;
+  const ci = rest.indexOf('｜起因：');
+  const body = ci >= 0 ? rest.slice(0, ci) : rest;
+  const cause = ci >= 0 ? rest.slice(ci + 4) : '';
+  let kind = 'plain', kindName = '主动';
+  if (label.startsWith('你转述给')) { kind = 'relay'; kindName = '转述'; }
+  else if (label.startsWith('你按定时任务')) { kind = 'cron'; kindName = '定时'; }
+  return { label, body, cause, kind, kindName };
+}
+
+let obSeq = 0;
+async function loadOutbound() {
+  const seq = ++obSeq;
+  const box = $('#oblist');
+  if (!box) return;
+  const q = ($('#obq') ? $('#obq').value.trim().toLowerCase() : '');
+  try {
+    const items = (await apiGet('api/outbound', { limit: 300 })).items || [];
+    if (seq !== obSeq) return;
+    $('#obCount').textContent = items.length || '';
+    const rows = q ? items.filter(r => (r.content || '').toLowerCase().includes(q)) : items;
+    $('#obhint').textContent = q ? `${rows.length} / ${items.length} 条` : `共 ${items.length} 条`;
+    if (!rows.length) {
+      box.innerHTML = '<div class="empty">还没有外发记录<small>AI 通过转述工具带话、或定时任务发消息时，这里就会出现记录</small></div>';
+      return;
+    }
+    box.innerHTML = '';
+    for (const r of rows) {
+      const p = parseOutbound(r.content);
+      const el = document.createElement('div');
+      el.className = 'row';
+      el.innerHTML = `<span class="chip ob-${p.kind}">${esc(p.kindName)}</span>
+        <span class="body">${esc(p.body || p.label)}
+          <div class="why">${esc(p.label)}${p.cause ? ' · 起因：' + esc(p.cause) : ''}</div></span>
+        <span class="time">${fmtTime(r.created_at)}</span>`;
+      box.appendChild(el);
+    }
+  } catch (e) {
+    if (seq === obSeq) box.innerHTML = '<div class="empty">加载失败：' + esc(e.message || e) + '</div>';
+  }
+}
+
+/* 把用户列表填进预览页下拉：默认选中当前用户，否则第一个有记忆的 */
+function fillPackSubjects() {
+  const sel = $('#packSubject');
+  if (!sel) return;
+  const subs = (state.subjects || []).slice();
+  const cur = subs.find(x => x.subject === state.subject) ? state.subject : '';
+  sel.innerHTML = '<option value="">（全库，会串台，仅调试用）</option>' +
+    subs.map(x => `<option value="${esc(x.subject)}">${esc(labelOf(x.subject))}</option>`).join('');
+  sel.value = cur || (subs.length ? (subs.find(x => x.l2 || x.l3) || subs[0]).subject : '');
+}
+
+async function genPack(onlyDetail) {
+  const out = $('#packout');
+  out.textContent = '生成中…';
+  $('#packtok').textContent = '';
+  const subject = $('#packSubject') ? $('#packSubject').value : (state.subject || '');
+  try {
+    const d = await apiPost('api/pack', {
+      query: $('#query').value.trim(),
+      subject: subject,
+    });
+    $('#packtok').textContent = `约 ${d.token_estimate} tokens` +
+      (d.relation_tokens ? `（记忆 ${d.memory_tokens} ＋ 关系 ${d.relation_tokens}）` : '');
+    const parts = [];
+    parts.push(d.block || '（记忆包是空的：库里还没有能注入的内容）');
+    if (d.relation_block) {
+      parts.push('');
+      parts.push(d.relation_block);
+    } else if (d.subject) {
+      parts.push('');
+      parts.push('（这个人还没有关系记录，关系快照为空，不占 token）');
+    }
+    out.textContent = parts.join('\n');
+    renderPackDetail(d);
+    if (onlyDetail) switchPackSeg('detail');
+  } catch (e) {
+    out.textContent = '生成失败：' + (e.message || e);
+    $('#packdetail').innerHTML = '';
+  }
+}
+
+function switchPackSeg(seg) {
+  document.querySelectorAll('#packseg .segbtn').forEach(b =>
+    b.classList.toggle('act', b.dataset.seg === seg));
+  $('#packout').style.display = seg === 'block' ? '' : 'none';
+  $('#packdetail').style.display = seg === 'detail' ? '' : 'none';
+}
+
+/* 把一次注入究竟从库里「读」了哪些条目，按分类结构化列出来。
+   全部数据来自后端 api/pack 返回的 pack 明细，纯本地渲染，不经 LLM。 */
+function renderPackDetail(d) {
+  const box = $('#packdetail');
+  if (!box) return;
+  const p = d.pack || {};
+  const sec = (title, icon, count, rowsHtml, extra) => {
+    if (!count) return '';
+    return `<section class="pdsec">
+      <div class="pdhead"><span class="pdicon">${icon}</span><b>${esc(title)}</b>
+        <span class="pdcount">${count} 条</span></div>
+      <div class="pdbody">${rowsHtml}</div>${extra || ''}</section>`;
+  };
+  const item = (label, text, sub) =>
+    `<div class="pdrow"><span class="pdchip">${esc(label)}</span>
+      <span class="pdtxt">${esc(text)}${sub ? `<div class="pdsub">${esc(sub)}</div>` : ''}</span></div>`;
+
+  let html = '';
+
+  // 摘要
+  const summary = p.summary || '';
+  if (summary) {
+    html += sec('会话摘要', '摘', 1, item('摘要', summary, '本会话最近一次阶段总结，注入时置顶给模型'));
+  }
+
+  // L2 长期事实
+  const l2 = p.l2 || [];
+  if (l2.length) {
+    html += sec('长期记忆 L2', 'L2', l2.length, l2.map(r =>
+      item(`#${r.id || '—'} · 置信${Number(r.confidence || 0).toFixed(2)}`,
+        `${r.subject}的${r.predicate}：${r.value}`,
+        `出处 #${r.source_msg_id || '—'}`)).join(''));
+  }
+
+  // 转述/外发
+  const outbound = p.outbound || [];
+  if (outbound.length) {
+    html += sec('自己发过的话（外发/转述）', '发', outbound.length, outbound.map(e => {
+      const pinned = e.pinned ? ' · 锁定' : '';
+      return item(e.here ? '当前会话' : '其他会话',
+        (e.content || '').replace(/^\[[^\]]{0,40}\]\s*/, ''),
+        `发往 ${e.session_id || '—'}${pinned}`);
+    }).join(''));
+  }
+
+  // 跨会话
+  const cross = p.cross || [];
+  if (cross.length) {
+    html += sec('其他会话的消息', '跨', cross.length, cross.map(e =>
+      item(e.subject || '别人', e.content || '', '')).join(''));
+  }
+
+  // L3 事件
+  const l3 = p.l3 || [];
+  if (l3.length) {
+    html += sec('短期事件 L3', 'L3', l3.length, l3.map(r =>
+      item(r.event_type || '事件', r.content || '', `#${r.id || '—'}`)).join(''));
+  }
+
+  // 被门控排除
+  const excluded = p.excluded || [];
+  if (excluded.length) {
+    html += sec('被门控筛除（未注入）', '筛', excluded.length, excluded.map(r =>
+      item(r.decision || 'deny', r.reason || '', '')).join(''));
+  }
+
+  // 裁剪记录
+  const trims = p.trim_notes || [];
+  if (trims.length) {
+    html += sec('超预算被裁剪', '裁', trims.length, trims.map(t =>
+      `<div class="pdrow"><span class="pdtxt">${esc(t)}</span></div>`).join(''));
+  }
+
+  if (!html) {
+    html = '<div class="empty">这次没有从记忆库读到任何内容<small>库里还没有这个人的记忆，或者本轮话题没匹配到任何条目</small></div>';
+  }
+  box.innerHTML = html;
+}
+
+async function manualSummary() {
+  const b = $('#sumbtn');
+  if (b.disabled) return;
+  b.disabled = true; b.textContent = '总结中…';
+  try {
+    await apiPost('api/summarize', {});
+    toast('已开始总结，完成后面板会自动刷新');
+    for (let i = 0; i < 12; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+      const o = await apiGet('api/overview');
+      if (!o.summarizing) break;
+    }
+    await loadSubjects(true);
+    if (state.subject !== null) await loadUser();
+    toast('总结完成，看看有没有新记忆');
+  } catch (e) {
+    toast(e.message || '触发失败', true);
+  } finally {
+    b.disabled = false; b.textContent = '手动总结一次';
+  }
+}
+
+/* ---------------- 顶栏与状态 ---------------- */
+
+/* 会话标识 → 短标签：取末段，群/私聊加前缀 */
+function spLabel(s) {
+  const str = String(s || '');
+  const tail = str.split(':').pop() || str;
+  const kind = /GroupMessage/i.test(str) ? '群 ' : (/FriendMessage/i.test(str) ? '私聊 ' : '');
+  return kind + tail;
+}
+
+function renderSumProg(sp) {
+  const box = $('#sumProg');
+  if (!box) return;
+  if (!sp) { box.style.display = 'none'; return; }
+  const rows = sp.items || [];
+  let html = `<h4>阶段总结进度</h4>`;
+  if (!sp.enabled) {
+    html += `<div class="spnote">阶段总结已关闭，不再累计触发</div>`;
+  } else if (!rows.length) {
+    html += `<div class="spnote">还没有会话在攒消息，聊起来就开始计数</div>`;
+  } else {
+    html += `<div class="spnote">攒满 ${sp.interval} 条用户消息触发一次总结</div>`;
+    for (const r of rows) {
+      const pct = Math.min(100, Math.round((r.count / Math.max(1, sp.interval)) * 100));
+      const wait = r.pending || sp.summarizing;
+      const num = wait ? '<b>已攒满</b>，等静默后总结' : `还差 <b>${r.remaining}</b> 条`;
+      html += `<div class="sprow${wait ? ' wait' : ''}" title="${esc(r.session)}">
+        <div class="sptop"><span class="spname">${esc(spLabel(r.session))}</span>
+        <span class="spnum">${r.count}/${sp.interval} ｜ ${num}</span></div>
+        <div class="spbar"><i style="width:${pct}%"></i></div></div>`;
+    }
+    if (sp.pending_summaries > rows.filter(r => r.pending).length) {
+      html += `<div class="spnote" style="margin-top:7px">另有 ${sp.pending_summaries} 个会话在等待总结</div>`;
+    }
+  }
+  box.innerHTML = html;
+  box.style.display = '';
+}
+
+async function loadOverview() {
+  try {
+    const [o, sp] = await Promise.all([apiGet('api/overview'), apiGet('api/summary_progress').catch(() => null)]);
+    const sums = o.summary_count != null ? o.summary_count : 0;
+    $('#status').innerHTML =
+      `全局：短期 ${sums} 条 · 长期 ${o.l2_count} 条 ｜ 被拦 ${o.deny_count + o.transform_count}`;
+    renderSumProg(sp);
+    if (o.outbound_count != null) $('#obCount').textContent = o.outbound_count || '';
+    const m = $('#mode');
+    const on = !!o.inject_enabled;
+    const rel = o.inject_relations !== false;
+    m.className = on ? 'mode on' : 'mode';
+    let modeText;
+    if (on) {
+      modeText = '注入中 · 记忆 + 关系都进 prompt';
+      m.title = '已开启注入：每次对话前把记忆包和关系快照写进 system prompt';
+    } else if (rel) {
+      modeText = '影子模式 · 只注入关系快照';
+      m.title = '记忆包不注入，但每次对话会带一小段「你和这人什么关系」（约几十 token）；想连记忆一起注入去配置里开「注入记忆」';
+    } else {
+      modeText = '影子模式 · 只记不注入';
+      m.title = '记忆和关系都不进 prompt；想生效去插件配置里打开「注入记忆」或「注入关系快照」';
+    }
+    m.innerHTML = `<i></i>${modeText}`;
+    $('#auditCount').textContent = (o.deny_count + o.transform_count) || '';
+    const ret = $('#ret');
+    if (ret) ret.textContent = o.l3_retention_days || 14;
+  } catch (e) {
+    $('#status').innerHTML = '<i>加载失败：' + esc(e.message || e) + '</i>';
+  }
+}
+
+function switchTab(t) {
+  state.tab = t;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('act', x.dataset.t === t));
+  $('#paneSum').classList.toggle('act', t === 'sum');
+  $('#pane2').classList.toggle('act', t === 'l2');
+  $('#pane3').classList.toggle('act', t === 'chat');
+}
+
+document.querySelectorAll('.tab').forEach(t => { t.onclick = () => switchTab(t.dataset.t); });
+$('#navAudit').onclick = () => openGlobal('audit');
+$('#navPack').onclick = () => openGlobal('pack');
+$('#navOutbound').onclick = () => openGlobal('outbound');
+$('#gback').onclick = () => {
+  state.view = 'user';
+  $('#globalView').style.display = 'none';
+  $('#userView').style.display = 'flex';
+  $('#navAudit').classList.remove('act');
+  $('#navPack').classList.remove('act');
+  $('#navOutbound').classList.remove('act');
+  renderUsers();
+};
+$('#search').oninput = renderUsers;
+$('#refresh').onclick = async () => {
+  await loadOverview(); await loadSubjects(true);
+  if (state.subject !== null) await loadUser();
+  toast('已刷新');
+};
+$('#q2').oninput = () => { state.q2 = $('#q2').value; renderL2(); };
+$('#q3').oninput = () => { state.q3 = $('#q3').value; renderL3(); };
+$('#t3').onchange = () => { state.t3 = $('#t3').value; renderL3(); };
+
+// 长期记忆：按总结分组 / 按分类查看 切换
+document.querySelectorAll('.l2view .vbtn').forEach(b => {
+  b.onclick = () => {
+    state.l2view = b.dataset.v;
+    document.querySelectorAll('.l2view .vbtn').forEach(x => x.classList.toggle('act', x === b));
+    renderL2();
+  };
+});
+
+/* ================= 模块外壳 ================= */
+
+const MODS = {
+  home: { id: 'home', title: '蔗糖的记忆中枢', tab: '' },
+  memory: { id: 'modMemory', title: '记忆管理', tab: 'memory' },
+  rel: { id: 'modRel', title: '人际关系', tab: 'rel' },
+  ppl: { id: 'modPeople', title: 'AI 与人', tab: 'ppl' },
+  tok: { id: 'modTok', title: 'Token 用量', tab: 'tok' },
+  config: { id: 'modConfig', title: '设置', tab: '' },
+};
+let curMod = 'home';
+
+/* 设置页里的两个子页：配置项 / 功能说明 */
+function setSetTab(name) {
+  document.querySelectorAll('#setTabs .subtab').forEach(t => t.classList.toggle('act', t.dataset.s === name));
+  $('#subCfg').classList.toggle('act', name === 'cfg');
+  $('#subDoc').classList.toggle('act', name === 'doc');
+  if (name === 'cfg') { syncCfgFoot(); $('#cfgHint').textContent = '改哪存哪，不用点保存'; }
+  else {
+    $('#cfgHint').textContent = '看完切回「配置项」就能改';
+    $('#subDoc').querySelectorAll('.docscroll').forEach(s => { s.scrollTop = 0; });
+  }
+}
+document.querySelectorAll('#setTabs .subtab').forEach(t => { t.onclick = () => setSetTab(t.dataset.s); });
+
+async function gotoMod(m) {
+  // 离开总配置页前先把攒着的改动落盘，免得切个 tab 就丢
+  if (curMod === 'config' && m !== 'config') {
+    try { await flushCfg(); } catch (e) {}
+  }
+  const meta = MODS[m] || MODS.home;
+  curMod = m;
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('act', v.id === meta.id));
+  $('#tbTitle').textContent = meta.title;
+  document.querySelectorAll('.tbt').forEach(t => t.classList.toggle('act', t.dataset.m === meta.tab));
+  $('#back').classList.toggle('hide', m === 'home');
+  if (m === 'home') loadHome();
+  else if (m === 'rel') loadRelGraph();
+  else if (m === 'ppl') loadPeople();
+  else if (m === 'tok') loadTok();
+  else if (m === 'config') { loadCfg(); setSetTab('cfg'); }
+  else if (m === 'memory') { loadOverview(); }
+}
+
+/* 说明页：点目录跳到本栏对应小节（左右两栏各自滚动） */
+$('#subDoc').querySelectorAll('[data-d]').forEach(t => {
+  t.onclick = () => {
+    const el = document.getElementById(t.dataset.d);
+    if (!el) return;
+    const box = el.closest('.docscroll');
+    if (box && box.scrollHeight > box.clientHeight + 4) {
+      box.scrollTo({ top: Math.max(0, el.offsetTop - 8), behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    el.style.transition = 'box-shadow .5s';
+    el.style.boxShadow = '0 0 0 2px var(--acc2)';
+    setTimeout(() => { el.style.boxShadow = ''; }, 900);
+  };
+});
+
+document.querySelectorAll('.tbt').forEach(t => { t.onclick = () => gotoMod(t.dataset.m); });
+document.querySelectorAll('.mcard').forEach(c => { c.onclick = () => gotoMod(c.dataset.m); });
+$('#back').onclick = () => gotoMod('home');
+
+/* 首页「记忆管理」卡片上的阶段总结进度一行 */
+function renderHomeSum(sp) {
+  const box = $('#statSum');
+  if (!box) return;
+  box.style.display = '';
+  if (!sp) {
+    box.className = 'sumpill';
+    box.innerHTML = '总结进度：接口没响应（插件可能还没重载）';
+    return;
+  }
+  if (!sp.enabled) {
+    box.className = 'sumpill';
+    box.innerHTML = '总结进度：阶段总结已关闭';
+    return;
+  }
+  const list = sp.items || [];
+  const top = list[0];
+  if (!top) {
+    box.className = 'sumpill';
+    box.innerHTML = `总结进度：还没攒消息（攒满 ${sp.interval} 条触发）`;
+    return;
+  }
+  const pct = Math.min(100, Math.round((top.count / Math.max(1, sp.interval)) * 100));
+  const wait = !!top.pending || !!sp.summarizing;
+  box.className = 'sumpill' + (wait ? ' wait' : '');
+  const head = wait
+    ? `总结进度：<b>已攒满</b> ${top.count}/${sp.interval}，等静默后总结`
+    : `总结进度：还差 <b>${top.remaining}</b> 条（${top.count}/${sp.interval}）`;
+  const more = list.length > 1 ? ` · 另 ${list.length - 1} 个会话` : '';
+  box.innerHTML = `${head}${more}<div class="spmini"><i style="width:${pct}%"></i></div>`;
+  box.title = `${top.session}｜${spLabel(top.session)}`;
+}
+
+async function loadHome() {
+  try {
+    const [o, a, g, s, c, tk, sp] = await Promise.all([
+      apiGet('api/overview'), apiGet('api/people'),
+      apiGet('api/relations/graph'), apiGet('api/subjects'),
+      apiGet('api/config'), apiGet('api/tokens', { range: 'all' }),
+      apiGet('api/summary_progress').catch(() => null),
+    ]);
+    const people = (s.items || []).length;
+    $('#statMem').innerHTML = `<span>用户 <b>${people}</b></span>
+      <span>长期 <b>${o.l2_count}</b></span><span>摘要 <b>${o.summary_count}</b></span>
+      <span>聊天 <b>${o.chat_count}</b></span>`;
+    renderHomeSum(sp);
+    $('#statRel').innerHTML = `<span>关系 <b>${g.edges.length}</b> 条</span>
+      <span>人 <b>${g.nodes.length}</b> 个</span>`;
+    const pplAll = (a.people || []).length;
+    $('#statPpl').innerHTML = `<span>人物 <b>${pplAll}</b></span>
+      <span>绑了 QQ <b>${a.with_qq || 0}</b></span>
+      <span>人均好感 <b>${a.avg}</b></span>`;
+    const byKey = {};
+    (c.items || []).forEach(i => { byKey[i.key] = i.value; });
+    const toolOn = Object.values(c.tools || {}).filter(Boolean).length;
+    $('#statCfg').innerHTML =
+      `<span>注入 <b>${byKey.inject_enabled ? '开' : '关'}</b></span>
+       <span>总结 <b>${byKey.summarize_enabled ? '开' : '关'}</b></span>
+       <span>好感 <b>${byKey.affinity_enabled ? '开' : '关'}</b></span>
+       <span>工具 <b>${toolOn}/2</b></span>`;
+    const tt = (tk.totals || {}).all || {};
+    $('#statTok').innerHTML = `<span>总计 <b>${fmtTok(tt.total)}</b></span>
+      <span>24h <b>${fmtTok(((tk.totals || {}).h24 || {}).total)}</b></span>
+      <span>${tt.calls || 0} 次</span>`;
+  } catch (e) {
+    ['#statMem', '#statRel', '#statPpl', '#statCfg', '#statTok'].forEach(k => {
+      if ($(k)) $(k).innerHTML = '<span>加载失败</span>';
+    });
+  }
+}
+
+/* ================= Token 用量 ================= */
+
+const TOK_COLORS = {
+  chat: '#ff8fb8', summary: '#bdb0ff', pack: '#8fd3c7', relation: '#ffc59b',
+};
+let tokRange = 'all';
+let tokData = null;
+
+function fmtTok(n) {
+  n = Math.max(0, Math.round(Number(n) || 0));
+  if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k';
+  return String(n);
+}
+
+function fmtTokTime(ts, step) {
+  const d = new Date((ts || 0) * 1000);
+  if (!ts) return '';
+  const p = n => String(n).padStart(2, '0');
+  if (step && step <= 3600) return `${p(d.getHours())}:00`;
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function fmtTokClock(ts) {
+  const d = new Date((ts || 0) * 1000);
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+async function loadTok() {
+  try {
+    tokData = await apiGet('api/tokens', { range: tokRange });
+    renderTok();
+  } catch (e) {
+    toast(e.message || '用量加载失败', true);
+  }
+}
+
+function renderTok() {
+  const d = tokData || {};
+  const T = d.totals || {};
+  const A = T.all || {}, H = T.h24 || {}, Y = T.today || {};
+  const io = x => `入 ${fmtTok((x.input || 0) + (x.cached || 0))} / 出 ${fmtTok(x.output || 0)}`;
+  $('#tkAll').textContent = fmtTok(A.total);
+  $('#tkAllSub').textContent = `${A.calls || 0} 次调用 · ${io(A)}`;
+  $('#tkH24').textContent = fmtTok(H.total);
+  $('#tkH24Sub').textContent = `${H.calls || 0} 次调用 · ${io(H)}`;
+  $('#tkToday').textContent = fmtTok(Y.total);
+  $('#tkTodaySub').textContent = `${Y.calls || 0} 次调用 · ${io(Y)}`;
+  $('#tokHint').textContent = d.enabled === false
+    ? '统计已关闭（总配置里打开「记录 Token 用量」）' : '';
+
+  const rows = d.by_module || [];
+  const max = rows.reduce((m, r) => Math.max(m, r.total), 0) || 1;
+  const sum = rows.reduce((s, r) => s + r.total, 0) || 1;
+  $('#tokModHint').textContent = rows.length
+    ? `${tokRange === 'all' ? '全部时间' : ({ '24h': '最近 24 小时', '7d': '最近 7 天', '30d': '最近 30 天' }[tokRange] || '')} · 共 ${fmtTok(sum)}`
+    : '';
+  $('#tokMods').innerHTML = rows.length ? rows.map(r => `
+    <div class="mbar">
+      <span class="mn">${esc(r.label || r.module)}</span>
+      <span class="mt"><i style="width:${(r.total / max * 100).toFixed(1)}%;background:${TOK_COLORS[r.module] || '#d9c4ff'}"></i></span>
+      <span class="mv">${fmtTok(r.total)}（${(r.total / sum * 100).toFixed(0)}%）</span>
+      <span class="mc">${r.calls} 次</span>
+    </div>`).join('') : '<div class="empty">这个区间还没有记录</div>';
+
+  const series = d.series || [];
+  const step = d.step || 86400;
+  const labels = d.labels || {};
+  const mods = d.modules || [];
+  const maxB = series.reduce((m, b) => Math.max(m, b.total || 0), 0) || 1;
+  $('#tokChart').innerHTML = series.map(b => {
+    const segs = mods.filter(m => (b.by || {})[m]).map(m =>
+      `<i style="height:${((b.by[m] || 0) / maxB * 100).toFixed(2)}%;background:${TOK_COLORS[m] || '#d9c4ff'}" title="${esc(labels[m] || m)} ${fmtTok(b.by[m])}"></i>`).join('');
+    return `<div class="cbar" title="${fmtTokClock(b.t)} · ${fmtTok(b.total)}">${segs}</div>`;
+  }).join('');
+  const every = Math.max(1, Math.ceil(series.length / 8));
+  $('#tokAxis').innerHTML = series.map((b, i) =>
+    `<span>${i % every === 0 ? fmtTokTime(b.t, step) : ''}</span>`).join('');
+  $('#tokSeriesHint').textContent = series.length
+    ? `共 ${fmtTok(series.reduce((s, b) => s + b.total, 0))} · 柱色对应上面的模块`
+    : '';
+
+  const rec = d.recent || [];
+  $('#tokRecent').innerHTML = rec.length ? rec.map(r => `
+    <div class="trow">
+      <span class="tt">${fmtTokClock(r.ts)}</span>
+      <span class="tm">${esc(r.label || r.module)}</span>
+      <span class="tu">${esc(cleanName(r.subject) || r.subject || '—')} · 入 ${fmtTok((r.input || 0) + (r.cached || 0))} / 出 ${fmtTok(r.output)}</span>
+      <span class="tv2">${fmtTok(r.total)}</span>
+      <span class="src">${r.source === 'estimate' ? '估算' : '实际'}</span>
+    </div>`).join('') : '<div class="empty">还没有记录，去聊两句就有了</div>';
+}
+
+document.querySelectorAll('#modTok .stab').forEach(t => {
+  t.onclick = () => {
+    tokRange = t.dataset.k;
+    document.querySelectorAll('#modTok .stab').forEach(x => x.classList.toggle('act', x === t));
+    loadTok();
+  };
+});
+if ($('#tokRefresh')) $('#tokRefresh').onclick = () => { loadTok(); toast('已刷新'); };
+if ($('#tokClear')) {
+  const btn = $('#tokClear');
+  let armed = false, timer = null;
+  btn.onclick = async () => {
+    if (!armed) {
+      armed = true;
+      btn.classList.add('arm');
+      btn.textContent = '确定清空？';
+      timer = setTimeout(() => {
+        armed = false; btn.classList.remove('arm'); btn.textContent = '清空记录';
+      }, 3000);
+      return;
+    }
+    clearTimeout(timer);
+    btn.disabled = true;
+    btn.textContent = '清空中…';
+    try {
+      await apiPost('api/tokens/clear', {});
+      toast('用量记录已清空');
+      await loadTok();
+    } catch (e) {
+      toast(e.message || '清空失败', true);
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('arm');
+      btn.textContent = '清空记录';
+      armed = false;
+    }
+  };
+}
+
+/* ================= 人际关系 ================= */
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+/* 图上的边只区分方向：单向一种色，互相认为另一种色（一对人只画一条，防重叠） */
+const EDGE_ONE = '#b9a7d6';
+const EDGE_BOTH = '#e2568a';
+const RANK_WIDTH = { '认识': 1.4, '朋友': 1.7, '亲友': 2.0, '恋人': 2.4 };
+const NODE_COLORS = ['#ffa8c6', '#bdb0ff', '#ffc59b', '#8fd3c7', '#f0a8d8', '#a8c4f0'];
+let relGraph = { nodes: [], edges: [], ranks: [] };
+let relUser = null;
+let relSelected = null;
+
+function sv(tag, attrs) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const k in (attrs || {})) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function nodeColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
+  return NODE_COLORS[h % NODE_COLORS.length];
+}
+
+function rankIndex(r) { return ['认识', '朋友', '亲友', '恋人'].indexOf(r); }
+
+async function loadRelGraph() {
+  try {
+    const g = await apiGet('api/relations/graph');
+    relGraph = g;
+    if (g.ranks && g.ranks.length) fillRankSelect(g.ranks);
+    fillRelNames();
+    const base = g.truncated
+      ? `人太多，只画前 60 个（共 ${g.edge_total} 条关系）`
+      : `共 ${g.edges.length} 条关系 · ${g.nodes.length} 个人`;
+    $('#relHint').textContent = (g.hidden_groups || 0) > 0
+      ? `${base} · 已滤掉 ${g.hidden_groups} 个群`
+      : base;
+    $('#relListCount').textContent = g.nodes.length || '';
+    renderLegend();
+    renderGraph();
+    renderRelListAll();
+    if (relSelected && !g.nodes.some(n => samePerson(n.subject, relSelected))) clearRelSel();
+    else if (relSelected) await loadRelUser(relSelected, true);
+  } catch (e) {
+    toast(e.message || '关系图加载失败', true);
+  }
+}
+
+/* ---------- 合并重名：同一个人被存成「张三」和「张三（群友）」时，把边并到一处 ---------- */
+async function loadRelAliases() {
+  const box = $('#relAliasList');
+  if (!box) return;
+  box.innerHTML = '<div class="empty" style="padding:14px 0">查一下…</div>';
+  try {
+    const d = await apiGet('api/relations/aliases');
+    const groups = d.groups || [];
+    if (!groups.length) {
+      box.innerHTML = '<div class="empty" style="padding:14px 0">没有重名的人，很干净</div>';
+      return;
+    }
+    box.innerHTML = '';
+    groups.forEach(g => {
+      const row = document.createElement('div');
+      row.className = 'aliasgrp';
+      row.innerHTML = '<span class="kw">可能是同一人</span>' +
+        g.names.map(n => `<button class="aliaschip" data-n="${esc(n.name)}">` +
+          `${esc(cleanName(n.name) || n.name)}<em>${n.edges}</em></button>`).join('') +
+        '<span class="hint">点一个名字＝保留它</span>';
+      row.querySelectorAll('.aliaschip').forEach(chip => {
+        chip.onclick = async () => {
+          const keep = chip.dataset.n;
+          const drops = g.names.map(n => n.name).filter(n => n !== keep);
+          row.querySelectorAll('.aliaschip').forEach(c => { c.disabled = true; });
+          chip.textContent = '合并中…';
+          try {
+            for (const dp of drops) {
+              await apiPost('api/relations/merge', { keep, drop: dp });
+            }
+            toast(`已并到「${cleanName(keep) || keep}」`);
+            await loadRelAliases();
+            await loadRelGraph();
+          } catch (e) {
+            toast(e.message || '合并失败', true);
+            loadRelAliases();
+          }
+        };
+      });
+      box.appendChild(row);
+    });
+  } catch (e) {
+    box.innerHTML = '<div class="empty" style="padding:14px 0">查不出来：' + esc(e.message || '') + '</div>';
+  }
+}
+
+function toggleRelAliases(force) {
+  const bar = $('#relAliasBar');
+  if (!bar) return;
+  const show = force === undefined ? bar.classList.contains('hide') : force;
+  bar.classList.toggle('hide', !show);
+  if (show) loadRelAliases();
+}
+
+let relTab = 'graph';
+
+function switchRel(v) {
+  relTab = v;
+  document.querySelectorAll('#modRel .stab').forEach(t => t.classList.toggle('act', t.dataset.r === v));
+  $('#relGraphView').classList.toggle('act', v === 'graph');
+  $('#relListView').classList.toggle('act', v === 'list');
+  $('#relLead').textContent = v === 'graph'
+    ? '圆点是每个人，线是「谁认为谁是什么关系」：单向一根箭头（紫），互相认为两根箭头（粉），线越粗档位越近。点圆点看右边（再点一下取消选择）。'
+    : '列出所有出现过的人（有记忆或有过关系）。点一个人，右边就能改 ta 的关系、补依据——和关系图里一样。再点一下取消选择。';
+  if (v === 'graph') renderGraph();
+  else renderRelListAll();
+}
+
+document.querySelectorAll('#modRel .stab').forEach(t => { t.onclick = () => switchRel(t.dataset.r); });
+$('#relListSearch').oninput = () => renderRelListAll();
+$('#relListKind').onchange = () => renderRelListAll();
+
+/* 列表页：一人一行，点一下选中，右边联动 */
+function renderRelListAll() {
+  const box = $('#relListAll');
+  if (!box) return;
+  const q = ($('#relListSearch').value || '').trim().toLowerCase();
+  const kind = $('#relListKind').value;
+  const all = relNodes();
+  const rows = all.filter(n => {
+    if (kind === 'linked' && !n.degree) return false;
+    if (kind === 'loose' && n.degree) return false;
+    if (!q) return true;
+    return `${cleanName(n.subject)} ${n.subject}`.toLowerCase().includes(q);
+  });
+  $('#relListHint').textContent = `${rows.length} / ${all.length} 个人`;
+  if (!rows.length) {
+    box.innerHTML = all.length
+      ? '<div class="empty">没有匹配的人</div>'
+      : '<div class="empty">还没有人<small>等 AI 记下第一条记忆或者关系，这里就会有人</small></div>';
+    return;
+  }
+  box.innerHTML = '';
+  for (const n of rows) {
+    const row = document.createElement('div');
+    row.className = 'allrow person' + (samePerson(n.subject, relSelected) ? ' act' : '');
+    row.dataset.s = n.subject;
+    const nm = cleanName(n.subject) || n.subject;
+    row.innerHTML = `
+      <span class="pav" style="background:${nodeColor(n.subject)}">${esc(initialOf(n.subject))}</span>
+      <span class="p2" title="${esc(n.subject)}">${esc(nm)}</span>
+      <span class="spacer"></span>
+      <span class="hint">${n.degree || 0} 条关系${n.xp ? ` · 好感 ${Math.round(n.xp)}` : ''}</span>`;
+    row.onclick = async () => {
+      if (relSelected === n.subject) { clearRelSel(); return; }
+      await loadRelUser(n.subject);
+      markRelRows();
+      renderGraph();
+    };
+    box.appendChild(row);
+  }
+}
+
+function markRelRows() {
+  document.querySelectorAll('#relListAll .allrow').forEach(r => {
+    r.classList.toggle('act', !!relSelected && samePerson(r.dataset.s, relSelected));
+  });
+}
+
+function fillRankSelect(ranks) {
+  const sel = $('#relRank');
+  const list = ranks || relGraph.ranks || ['认识', '朋友', '亲友', '恋人'];
+  const cur = sel.value;
+  sel.innerHTML = list.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  if (list.includes(cur)) sel.value = cur;
+}
+
+let relMenuOpen = false;
+
+function fillRelNames() {
+  const pick = $('#relPick');
+  const cur = relSelected || '';
+  pick.innerHTML = '<option value="">选人…</option>' + relNodes().map(n =>
+    `<option value="${esc(n.subject)}">${esc(cleanName(n.subject) || n.subject)}</option>`).join('');
+  pick.value = cur;
+  if (pick.value !== cur) pick.value = '';
+  if (relMenuOpen) renderRelMenu($('#relTarget').value);
+}
+
+function renderLegend() {
+  $('#relLegend').innerHTML =
+    `<span><i style="background:${EDGE_ONE}"></i>单向</span>
+     <span><i style="background:${EDGE_BOTH}"></i>互相认为</span>
+     <span class="hint">线越粗档位越近；圆点颜色只是区分谁是谁，没有含义</span>`;
+}
+
+function trimTo(pt, ctrl, r) {
+  const dx = ctrl.x - pt.x, dy = ctrl.y - pt.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: pt.x + dx / len * r, y: pt.y + dy / len * r };
+}
+
+function renderGraph() {
+  const box = $('#graphbox'), svg = $('#graph');
+  if (!box || !svg) return;
+  const w = Math.max(340, box.clientWidth || 640);
+  const h = Math.max(240, box.clientHeight || 420);
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = '';
+  const nodes = relNodes();
+  const aliasOf = {};
+  for (const g of nodes) for (const a of g.aliases) aliasOf[a] = g.subject;
+  const edges = [];
+  for (const e of (relGraph.edges || [])) {
+    const s = aliasOf[e.source] || e.source;
+    const t = aliasOf[e.target] || e.target;
+    if (!s || !t || s === t) continue;   // 并成一个节点后自己对自己，没意义
+    edges.push({ ...e, source: s, target: t });
+  }
+  if (!nodes.length) {
+    const t = sv('text', { x: w / 2, y: h / 2, 'text-anchor': 'middle',
+      fill: '#b98da0', 'font-size': '12.5' });
+    t.textContent = '还没有关系记录 —— AI 从对话里抓到「谁是谁的谁」之后就会有线';
+    svg.appendChild(t);
+    return;
+  }
+  const cx = w / 2, cy = h / 2;
+  const R = Math.max(60, Math.min(w, h) / 2 - 82);
+  const pos = {};
+  nodes.forEach((n, i) => {
+    const a = -Math.PI / 2 + (i * 2 * Math.PI) / nodes.length;
+    pos[n.subject] = nodes.length === 1
+      ? { x: cx, y: cy }
+      : { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
+  });
+  const byName = {};
+  nodes.forEach(n => { byName[n.subject] = n; });
+  const rad = n => 7 + Math.min(6, n.degree || 0) * 1.5;
+
+  const defs = sv('defs');
+  [EDGE_ONE, EDGE_BOTH].forEach((color, i) => {
+    const m = sv('marker', { id: `arw${i}`, viewBox: '0 0 9 9', refX: '8', refY: '4.5',
+      markerWidth: '6', markerHeight: '6', orient: 'auto-start-reverse' });
+    m.appendChild(sv('path', { d: 'M0,0 L9,4.5 L0,9 Z', fill: color }));
+    defs.appendChild(m);
+  });
+  svg.appendChild(defs);
+
+  /* 同一对的人只画一条线：单向一根箭头，互相认为两根箭头 + 另一种颜色 */
+  const pairs = new Map();
+  for (const e of edges) {
+    if (!e.source || !e.target || !pos[e.source] || !pos[e.target]) continue;
+    const a = e.source < e.target ? e.source : e.target;
+    const b = e.source < e.target ? e.target : e.source;
+    const key = a + '\u0000' + b;
+    let g = pairs.get(key);
+    if (!g) { g = { a, b, fwd: null, back: null }; pairs.set(key, g); }
+    if (e.source === a) g.fwd = e; else g.back = e;
+  }
+
+  for (const g of pairs.values()) {
+    const both = !!(g.fwd && g.back);
+    const e = g.fwd || g.back;
+    const p1 = pos[g.a], p2 = pos[g.b];
+    const dx = p2.x - p1.x, dy = p2.y - p1.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ctrl = { x: (p1.x + p2.x) / 2 - dy / len * 14,
+                   y: (p1.y + p2.y) / 2 + dx / len * 14 };
+    const a1 = trimTo(p1, ctrl, rad(byName[g.a]) + 6);
+    const a2 = trimTo(p2, ctrl, rad(byName[g.b]) + 6);
+    const rankMax = both
+      ? (rankIndex(g.fwd.relation) >= rankIndex(g.back.relation) ? g.fwd.relation : g.back.relation)
+      : e.relation;
+    const color = both ? EDGE_BOTH : EDGE_ONE;
+    const path = sv('path', {
+      d: `M ${a1.x} ${a1.y} Q ${ctrl.x} ${ctrl.y} ${a2.x} ${a2.y}`,
+      fill: 'none', stroke: color, 'stroke-width': RANK_WIDTH[rankMax] || 1.6,
+      opacity: both ? '0.95' : '0.8',
+      'marker-end': `url(#arw${both ? 1 : 0})`,
+      ...(both ? { 'marker-start': 'url(#arw1)', 'data-both': '1' } : {}),
+      'data-s': g.a, 'data-t': g.b,
+      style: 'cursor:pointer',
+    });
+    const ttl = sv('title');
+    ttl.textContent = both
+      ? `${g.a} 认为 ${g.b} 是${g.fwd.relation}；${g.b} 认为 ${g.a} 是${g.back.relation}`
+      : `${e.source} 认为 ${e.target} 是${e.relation}` +
+        (e.evidence_count ? `（${e.evidence_count} 条依据）` : '');
+    path.appendChild(ttl);
+    const pick = both ? g.a : e.source;
+    path.addEventListener('click', () => {
+      if (relSelected === pick) { clearRelSel(); return; }
+      relSelected = pick;
+      renderGraph();
+      loadRelUser(pick);
+    });
+    svg.appendChild(path);
+  }
+
+  for (const n of nodes) {
+    const p = pos[n.subject];
+    const g = sv('g', { class: 'gnode' + (samePerson(n.subject, relSelected) ? ' sel' : ''),
+      'data-s': n.subject });
+    g.appendChild(sv('circle', { cx: p.x, cy: p.y, r: rad(n), fill: nodeColor(n.subject),
+      stroke: '#fff', 'stroke-width': '2' }));
+    const t = sv('text', { x: p.x, y: p.y + rad(n) + 14, 'text-anchor': 'middle',
+      'font-size': '11.5', fill: '#8d6b7a' });
+    const label = cleanName(n.subject) || n.subject;
+    t.textContent = label.length > 9 ? label.slice(0, 9) + '…' : label;
+    g.appendChild(t);
+    const ttl = sv('title');
+    ttl.textContent = `${label}｜好感 ${Math.round(n.xp || 0)}｜${n.degree || 0} 条关系`;
+    g.appendChild(ttl);
+    g.addEventListener('click', () => {
+      if (samePerson(n.subject, relSelected)) { clearRelSel(); return; }
+      relSelected = n.subject;
+      renderGraph();
+      loadRelUser(n.subject);
+    });
+    svg.appendChild(g);
+  }
+}
+
+async function loadRelUser(subject, keepScroll) {
+  if (!subject) return;
+  relSelected = subject;
+  $('#relName').textContent = cleanName(subject) || subject;
+  $('#relAv').textContent = initialOf(subject);
+  $('#relClear').classList.remove('hide');
+  $('#relPick').value = subject;
+  try {
+    const d = await apiGet('api/relations/user', { subject });
+    relUser = d;
+    $('#relMeta').textContent =
+      `好感 ${d.affinity.xp} · ${d.affinity.stage || '—'} ｜ ${(d.out || []).length + (d.in || []).length} 条关系`;
+    renderRelList(keepScroll);
+  } catch (e) {
+    toast(e.message || '加载失败', true);
+  }
+}
+
+function clearRelSel() {
+  relSelected = null;
+  relUser = null;
+  $('#relName').textContent = '还没选人';
+  $('#relAv').textContent = '?';
+  $('#relMeta').textContent = '点关系图上的圆点，或者左边列表里挑一个人';
+  $('#relClear').classList.add('hide');
+  $('#relPick').value = '';
+  $('#relList').innerHTML = '<div class="empty">先选一个人</div>';
+  renderGraph();
+  markRelRows();
+}
+
+/* 证据原话：本身就是可编辑区域，点一下就能打字；回车/失焦保存，Esc 放弃 */
+function bindEvidenceEdit(qEl, ev) {
+  if (!qEl) return;
+  qEl.setAttribute('contenteditable', 'true');
+  qEl.setAttribute('spellcheck', 'false');
+  qEl.setAttribute('data-ph', '补一句依据…');
+  qEl.title = '直接点进来就能改，回车或点别处保存，Esc 放弃';
+  qEl.textContent = ev.quote || '';
+  let old = ev.quote || '';
+  let saving = false;
+  const save = async () => {
+    if (saving) return;
+    const val = (qEl.textContent || '').replace(/\s+/g, ' ').trim();
+    if (val === old) { qEl.textContent = old; return; }
+    if (!val) { qEl.textContent = old; return; }
+    saving = true;
+    try {
+      await apiPost('api/relations/evidence/update', { id: ev.id, quote: val });
+      old = val;
+      ev.quote = val;
+      qEl.textContent = val;
+      toast('证据改好了');
+    } catch (e) {
+      qEl.textContent = old;
+      toast(e.message || '改失败', true);
+    } finally {
+      saving = false;
+    }
+  };
+  qEl.onkeydown = (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === 'Enter') { e.preventDefault(); save(); qEl.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); qEl.textContent = old; qEl.blur(); }
+  };
+  qEl.onblur = save;
+}
+
+function relRow(e) {
+  const el = document.createElement('div');
+  el.className = 'relrow' + (e.source === relSelected ? ' mine' : '');
+  const evs = e.evidence || [];
+  const ranks = (relGraph.ranks && relGraph.ranks.length)
+    ? relGraph.ranks : ['认识', '朋友', '亲友', '恋人'];
+  const opts = ranks.map(r =>
+    `<option value="${esc(r)}"${r === e.relation ? ' selected' : ''}>${esc(r)}</option>`).join('');
+  el.innerHTML = `
+    <div class="relmain">
+      <span class="p1" title="${esc(e.source)}">${esc(cleanName(e.source) || e.source)}</span>
+      <span class="kw">认为</span>
+      <span class="p2" title="${esc(e.target)}">${esc(cleanName(e.target) || e.target)}</span>
+      <span class="kw">是</span>
+      <select class="ranksel r-${esc(e.relation)}" title="改档位，选完立刻保存">${opts}</select>
+      <span class="spacer"></span>
+      <button class="btn mini danger" data-a="del">删除</button>
+    </div>
+    <div class="evlist"></div>
+    <input class="evnew" placeholder="写一句依据，回车就加上">`;
+
+  const evBox = el.querySelector('.evlist');
+  for (const x of evs) {
+    const row = document.createElement('div');
+    row.className = 'ev';
+    row.innerHTML = `<span class="q"></span>
+      <span class="t">${fmtTime(x.created_at)}</span>
+      <span class="x" title="删掉这条依据">×</span>`;
+    bindEvidenceEdit(row.querySelector('.q'), x);
+    const btn = row.querySelector('.x');
+    let armed = false, tm = null;
+    btn.onclick = async () => {
+      if (!armed) {
+        armed = true;
+        btn.textContent = '确认';
+        btn.style.color = 'var(--bad)';
+        tm = setTimeout(() => {
+          armed = false; btn.textContent = '×'; btn.style.color = '';
+        }, 3000);
+        return;
+      }
+      clearTimeout(tm);
+      try {
+        await apiPost('api/relations/evidence/delete', { id: x.id });
+        toast('依据已删');
+        await loadRelUser(relSelected, true);
+        loadRelGraph();
+      } catch (err) {
+        toast(err.message || '删除失败', true);
+      }
+    };
+    evBox.appendChild(row);
+  }
+
+  const inp = el.querySelector('.evnew');
+  inp.onkeydown = async (ev) => {
+    if (ev.isComposing || ev.keyCode === 229) return;
+    if (ev.key !== 'Enter') return;
+    ev.preventDefault();
+    const val = inp.value.trim();
+    if (!val) return;
+    inp.disabled = true;
+    try {
+      await apiPost('api/relations/set', {
+        source: e.source, target: e.target, relation: e.relation, quote: val,
+      });
+      toast('依据加上了');
+      await loadRelUser(relSelected, true);
+      loadRelGraph();
+    } catch (err) {
+      inp.disabled = false;
+      toast(err.message || '没存上', true);
+    }
+  };
+
+  const sel = el.querySelector('.ranksel');
+  sel.onchange = async () => {
+    const next = sel.value;
+    try {
+      await apiPost('api/relations/set', {
+        source: e.source, target: e.target, relation: next,
+      });
+      e.relation = next;
+      sel.className = `ranksel r-${next}`;
+      toast('档位改好了');
+      loadRelGraph();
+    } catch (err) {
+      sel.value = e.relation;
+      toast(err.message || '修改失败', true);
+    }
+  };
+
+  bindDelete(el.querySelector('[data-a="del"]'), async () => {
+    return await apiPost('api/relations/delete', { source: e.source, target: e.target });
+  }, async (r) => {
+    // 一条都没删到就别报「已删」——多半是同一个人的另一种写法还留着，箭头当然不会变
+    if (!r || !r.deleted) {
+      toast('没删到东西：库里这条和你点的不是同一个写法，试试「合并重名」', true);
+    } else {
+      toast('关系已删');
+    }
+    await loadRelUser(relSelected, true);
+    loadRelGraph();
+  });
+  return el;
+}
+
+function renderRelList(keepScroll) {
+  const box = $('#relList');
+  if (!relUser) { box.innerHTML = '<div class="empty">先选一个人</div>'; return; }
+  const scroll = keepScroll ? box.scrollTop : 0;
+  const q = ($('#relSearch').value || '').trim().toLowerCase();
+  const out = (relUser.out || []).filter(e => !q || cleanName(e.target).toLowerCase().includes(q));
+  const inc = (relUser.in || []).filter(e => !q || cleanName(e.source).toLowerCase().includes(q));
+  const all = [...out, ...inc];
+  if (!all.length) {
+    box.innerHTML = '<div class="empty">这个人还没有关系记录<small>上面填个名字就能补一条</small></div>';
+    return;
+  }
+  box.innerHTML = '';
+  all.forEach(e => box.appendChild(relRow(e)));
+  box.scrollTop = scroll;
+}
+
+$('#relRefresh').onclick = () => { loadRelGraph(); toast('已刷新'); };
+$('#relMergeBtn').onclick = () => toggleRelAliases();
+$('#relAliasClose').onclick = () => toggleRelAliases(false);
+$('#relSearch').oninput = () => renderRelList(true);
+$('#relPick').onchange = () => {
+  const v = $('#relPick').value;
+  if (!v) { clearRelSel(); return; }
+  loadRelUser(v);
+};
+$('#relClear').onclick = () => clearRelSel();
+
+/* ---------- 对方名字下拉（自绘） ---------- */
+function renderRelMenu(filter) {
+  const all = (relGraph.nodes || []).map(n => n.subject);
+  const q = String(filter || '').trim().toLowerCase();
+  const list = q ? all.filter(n => {
+    const show = String(cleanName(n) || n).toLowerCase();
+    return show.includes(q) || String(n).toLowerCase().includes(q);
+  }) : all;
+  const box = $('#relTargetMenu');
+  box.innerHTML = list.length
+    ? list.map(n => `<div class="nameopt" data-n="${esc(n)}">${esc(cleanName(n) || n)}</div>`).join('')
+    : '<div class="nameopt empty">没有匹配的人</div>';
+}
+
+function openRelMenu() {
+  renderRelMenu($('#relTarget').value);
+  $('#relTargetMenu').classList.remove('hide');
+  $('#relTargetArrow').classList.add('up');
+  relMenuOpen = true;
+}
+
+function closeRelMenu() {
+  $('#relTargetMenu').classList.add('hide');
+  $('#relTargetArrow').classList.remove('up');
+  relMenuOpen = false;
+}
+
+/* mousedown 先挡掉，免得点箭头时输入框先失焦、菜单被顺带关掉 */
+$('#relTargetArrow').addEventListener('mousedown', e => e.preventDefault());
+$('#relTargetArrow').addEventListener('click', e => {
+  e.stopPropagation();
+  if (relMenuOpen) closeRelMenu();
+  else { openRelMenu(); $('#relTarget').focus(); }
+});
+$('#relTarget').addEventListener('focus', () => { if (!relMenuOpen) openRelMenu(); });
+$('#relTarget').addEventListener('click', () => { if (!relMenuOpen) openRelMenu(); });
+$('#relTarget').addEventListener('input', () => {
+  if (relMenuOpen) renderRelMenu($('#relTarget').value);
+  else openRelMenu();
+});
+$('#relTarget').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeRelMenu(); return; }
+  if (e.key === 'Enter' && relMenuOpen) {
+    const first = $('#relTargetMenu').querySelector('.nameopt[data-n]');
+    if (first) { e.preventDefault(); $('#relTarget').value = first.dataset.n; closeRelMenu(); }
+  }
+});
+$('#relTargetMenu').addEventListener('mousedown', e => {
+  const o = e.target.closest('.nameopt');
+  if (!o || !o.dataset.n) return;
+  e.preventDefault();
+  $('#relTarget').value = o.dataset.n;
+  closeRelMenu();
+});
+document.addEventListener('click', e => {
+  if (!relMenuOpen) return;
+  if (e.target.closest('#relTargetBox')) return;
+  closeRelMenu();
+});
+
+$('#relSave').onclick = async () => {
+  if (!relSelected) { toast('先在图上点一个人', true); return; }
+  const target = ($('#relTarget').value || '').trim();
+  if (!target) { toast('先输入对方名字', true); return; }
+  if (target === relSelected) { toast('不能跟自己建关系', true); return; }
+  try {
+    await apiPost('api/relations/set', {
+      source: relSelected, target, relation: $('#relRank').value,
+    });
+    $('#relTarget').value = '';
+    toast('记下了');
+    await loadRelUser(relSelected);
+    loadRelGraph();
+  } catch (e) {
+    toast(e.message || '保存失败', true);
+  }
+};
+
+let graphTimer = null;
+window.addEventListener('resize', () => {
+  if (curMod !== 'rel') return;
+  clearTimeout(graphTimer);
+  graphTimer = setTimeout(renderGraph, 180);
+});
+
+/* ================= AI 与人 ================= */
+
+let pplData = null;
+let pplSel = '';
+let stageDraft = [];
+
+async function loadPeople(keep) {
+  try {
+    const d = await apiGet('api/people');
+    pplData = d;
+    stageDraft = (d.stages || []).map(s => ({ name: s.name, threshold: s.threshold }));
+    const names = (d.people || []).map(p => p.person);
+    if (keep && names.includes(keep)) pplSel = keep;
+    else if (!names.includes(pplSel)) pplSel = names[0] || '';
+    renderStages();
+    renderPpl();
+  } catch (e) {
+    toast(e.message || '人物加载失败', true);
+  }
+}
+
+function renderStages() {
+  const box = $('#stageList');
+  box.innerHTML = '';
+  stageDraft.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'stagerow';
+    row.innerHTML = `<span class="idx">${i + 1}</span>
+      <input class="sname" maxlength="10" value="${esc(s.name)}">
+      <input class="sth" type="number" min="0" step="10" value="${Number(s.threshold) || 0}">
+      <span class="x" title="删掉这档">×</span>`;
+    row.querySelector('.sname').oninput = ev => { s.name = ev.target.value; };
+    row.querySelector('.sth').oninput = ev => { s.threshold = Number(ev.target.value) || 0; };
+    row.querySelector('.x').onclick = () => { stageDraft.splice(i, 1); renderStages(); };
+    box.appendChild(row);
+  });
+  if (!stageDraft.length) box.innerHTML = '<div class="empty" style="padding:18px 0">至少要留一档</div>';
+}
+
+function renderPpl() {
+  const d = pplData;
+  if (!d) return;
+  const people = d.people || [];
+  const noQq = people.length - (d.with_qq || 0);
+  $('#pplCount').textContent = people.length;
+  $('#pplHintBar').textContent = people.length
+    ? `${people.length} 人 · 绑了 QQ ${d.with_qq || 0}` + (noQq ? ` · ${noQq} 人还没绑` : '')
+    : '还没有人';
+  $('#affRule').textContent =
+    `增长规则：每条用户消息 +4 → +1 递减，越接近上限涨得越慢（上限 ${d.cap}，改阶段阈值立刻生效）`;
+
+  const counts = {};
+  people.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; });
+  const max = Math.max(1, ...(d.stages || []).map(s => counts[s.name] || 0));
+  $('#affDist').innerHTML = (d.stages || []).map(s => {
+    const n = counts[s.name] || 0;
+    return `<div class="distrow"><span class="dname" title="${esc(s.name)}">${esc(s.name)}</span>
+      <span class="dbar"><i style="width:${Math.round(n / max * 100)}%"></i></span>
+      <span class="dcnt">${n}</span></div>`;
+  }).join('');
+  renderPplList();
+  renderPplDetail();
+}
+
+function pplSwitch(p) {
+  document.querySelectorAll('#modPeople .stab').forEach(t => t.classList.toggle('act', t.dataset.p === p));
+  $('#ppanePeople').classList.toggle('act', p === 'people');
+  $('#ppaneStages').classList.toggle('act', p === 'stages');
+  $('#pplLead').textContent = p === 'stages'
+    ? '这边定「多少好感算哪个阶段」：改名字、改阈值、加档删档，保存后所有人立刻按新规则重新归档。'
+    : '一个人 = 一个 QQ + 一串称呼。同一个人被叫成外号、英文名、甚至写错的名字，都加进「称呼」里就不会再分家；好感、关系、记忆全挂在一个人身上。';
+}
+
+document.querySelectorAll('#modPeople .stab').forEach(t => { t.onclick = () => pplSwitch(t.dataset.p); });
+
+function pplMatch(p, q) {
+  if (!q) return true;
+  const hay = [p.person, p.qq, ...(p.aliases || []).map(a => a.raw)].join(' ').toLowerCase();
+  return hay.includes(q);
+}
+
+function renderPplList() {
+  const d = pplData;
+  if (!d) return;
+  const q = ($('#pplSearch').value || '').trim().toLowerCase();
+  const list = (d.people || []).filter(p => pplMatch(p, q));
+  const box = $('#pplList');
+  if (!list.length) {
+    box.innerHTML = `<div class="empty">${q ? '没搜到' : '还没有人'}<small>${q ? '换个名字、称呼或 QQ 试试' : '有人说话之后这里就会出现'}</small></div>`;
+    return;
+  }
+  box.innerHTML = list.map(p => `
+    <div class="pcard ${p.person === pplSel ? 'act' : ''}" data-p="${esc(p.person)}">
+      <div class="pav" style="background:${nodeColor(p.person)}">${esc(initialOf(p.person))}</div>
+      <div class="pbody">
+        <div class="pname"><b>${esc(cleanName(p.person) || p.person)}</b>
+          ${p.qq ? `<span class="badge qq">${esc(p.qq)}</span>` : '<span class="badge noqq">未绑 QQ</span>'}</div>
+        <div class="pmeta">
+          <span>${(p.aliases || []).length} 个称呼</span><span>·</span>
+          <span>${esc(p.stage || '—')}</span>
+          ${(p.out.length + p.in.length) ? `<span>·</span><span>关系 ${p.out.length + p.in.length}</span>` : ''}
+        </div>
+      </div>
+      <div class="pxp">${Math.round(p.xp)}</div>
+    </div>`).join('');
+  box.querySelectorAll('.pcard').forEach(c => {
+    c.onclick = () => { pplSel = c.dataset.p; renderPpl(); };
+  });
+}
+
+async function pplMerge(keep, drop) {
+  if (!keep || !drop || keep === drop) return;
+  try {
+    const r = await apiPost('api/people/merge', { keep, drop });
+    if (r.people) pplData = r.people;
+    pplSel = keep;
+    renderPpl();
+    toast(`已把「${drop}」并进「${keep}」`);
+  } catch (e) {
+    toast(e.message || '合并失败', true);
+  }
+}
+
+function renderPplDetail() {
+  const d = pplData;
+  if (!d) return;
+  const p = (d.people || []).find(x => x.person === pplSel);
+  const box = $('#pplDetail');
+  if (!p) {
+    box.innerHTML = '<div class="empty" style="padding:44px 0">左边挑一个人</div>';
+    return;
+  }
+  const others = (d.people || []).filter(x => x.person !== p.person);
+  const sugg = ((d.suggestions || []) || []).filter(s =>
+    (s.people || []).some(x => x.person === p.person));
+  const mine = aliasKey(p.person);
+  box.innerHTML = `
+    <div class="phead">
+      <div class="big" style="background:${nodeColor(p.person)}">${esc(initialOf(p.person))}</div>
+      <div>
+        <h3>${esc(cleanName(p.person) || p.person)}
+          ${p.qq ? `<span class="badge qq">QQ ${esc(p.qq)}</span>` : '<span class="badge noqq">QQ 未绑定</span>'}</h3>
+        <div class="sub">好感 ${Math.round(p.xp)}（${esc(p.stage || '—')}）· 长期记忆 ${p.l2} 条 · 聊天 ${p.l3} 条${p.last_at ? ` · 最近 ${fmtHM(p.last_at)}` : ''}</div>
+      </div>
+    </div>
+
+    ${sugg.map(s => {
+      const other = (s.people || []).find(x => x.person !== p.person);
+      if (!other) return '';
+      return `<div class="suggest">读音一样、写法不同：<b>${esc(other.person)}</b> 看起来就是 TA
+        <button class="btn mini" data-merge="${esc(other.person)}">是，合并</button></div>`;
+    }).join('')}
+
+    <div class="psec">
+      <div class="psec-t">QQ 号 <span class="hint">身份锚：填了以后不管被叫成什么，都还是这个人</span></div>
+      <div class="qline">
+        <input id="pplQq" value="${esc(p.qq)}" placeholder="例如 10001" inputmode="numeric">
+        <button class="btn mini primary" id="pplQqSave">保存</button>
+      </div>
+    </div>
+
+    <div class="psec">
+      <div class="psec-t">称呼 <span class="hint">出现任意一个，都算在说这个人</span></div>
+      <div class="chipwrap">
+        ${(p.aliases || []).map(a => `
+          <span class="achip ${a.key === mine ? 'self' : ''}" title="${
+            { quote: '从你们的原话里学的', manual: '手动加的', merge: '合并时带过来的',
+              event: '聊天时自动认的', bootstrap: '扫库补登记', summary: '总结时认的',
+              ai_tool: 'AI 记关系时认的', auto: '自动登记' }[a.source] || '登记的称呼'}">
+          ${esc(a.raw)}${a.key === mine ? '' :
+            `<span class="x" data-k="${esc(a.key)}" title="删掉这个称呼">×</span>`}</span>`).join('')}
+        <span class="addinline">
+          <input id="pplAliasIn" placeholder="外号 / 别名" maxlength="20">
+          <button class="btn mini" id="pplAliasAdd">+ 加</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="psec">
+      <div class="psec-t">好感
+        <span class="hint">${p.next ? `离「${esc(p.next)}」还差 ${Math.max(0, Math.round(p.next_threshold - p.xp))}` : '到顶了，之后每条只 +1'}</span></div>
+      <div class="pbar"><i style="width:${Math.round((p.progress || 0) * 100)}%"></i></div>
+      <div class="affops" style="margin-top:7px">
+        <button data-d="-10">−</button>
+        <input type="number" min="0" id="pplXp" value="${Math.round(p.xp)}">
+        <button data-d="10">+</button>
+        <button class="save" id="pplXpSave">存</button>
+      </div>
+    </div>
+
+    <div class="psec">
+      <div class="psec-t">关系 <span class="hint">${p.out.length} 出 · ${p.in.length} 入</span></div>
+      <div class="relmini">
+        ${p.out.map(e => `<span class="rm">${esc(cleanName(p.person))} → ${esc(cleanName(e.target))} <i>${esc(e.relation)}</i></span>`).join('')}
+        ${p.in.map(e => `<span class="rm">${esc(cleanName(e.source))} → ${esc(cleanName(p.person))} <i>${esc(e.relation)}</i></span>`).join('')}
+        ${(!p.out.length && !p.in.length) ? '<span class="pempty">还没有关系记录</span>' : ''}
+      </div>
+    </div>
+
+    ${others.length ? `<div class="psec">
+      <div class="psec-t">并进别人 <span class="hint">确认是同一个人时用：称呼、好感、关系、记忆都会搬过去</span></div>
+      <div class="qline">
+        <select id="pplMergeSel">
+          ${others.map(o => `<option value="${esc(o.person)}">${esc(o.person)}${o.qq ? `（${esc(o.qq)}）` : ''}</option>`).join('')}
+        </select>
+        <button class="btn mini danger" id="pplMergeBtn">合并</button>
+      </div>
+    </div>` : ''}
+  `;
+
+  box.querySelectorAll('[data-merge]').forEach(b => {
+    b.onclick = () => pplMerge(p.person, b.dataset.merge);
+  });
+  $('#pplQqSave').onclick = async () => {
+    const v = ($('#pplQq').value || '').trim();
+    try {
+      const r = await apiPost('api/people/qq', { person: p.person, qq: v });
+      if (r.people) pplData = r.people;
+      renderPpl();
+      toast(v ? 'QQ 已绑定' : '已清空 QQ');
+    } catch (e) {
+      toast(e.message || '保存失败', true);
+    }
+  };
+  $('#pplAliasAdd').onclick = async () => {
+    const raw = ($('#pplAliasIn').value || '').trim();
+    if (!raw) { toast('先写个称呼', true); return; }
+    try {
+      const r = await apiPost('api/people/alias', { person: p.person, alias: raw });
+      if (r.need_confirm) {
+        toast(`「${raw}」现在算在「${r.owner}」名下，要合的话用下面的「并进别人」`);
+        return;
+      }
+      if (r.people) pplData = r.people;
+      renderPpl();
+      toast('已加上称呼');
+    } catch (e) {
+      toast(e.message || '加不上', true);
+    }
+  };
+  box.querySelectorAll('.achip .x').forEach(x => {
+    x.onclick = async () => {
+      try {
+        const r = await apiPost('api/people/alias/remove',
+          { person: p.person, key: x.dataset.k });
+        if (r.people) pplData = r.people;
+        renderPpl();
+        toast('已删掉这个称呼');
+      } catch (e) {
+        toast(e.message || '删不掉', true);
+      }
+    };
+  });
+  const xpApply = async (path, body) => {
+    try {
+      const r = await apiPost(path, body);
+      if (r.people) pplData = r.people;
+      renderPpl();
+      toast('已更新');
+    } catch (e) {
+      toast(e.message || '失败', true);
+    }
+  };
+  box.querySelectorAll('.affops button[data-d]').forEach(b => {
+    b.onclick = () => xpApply('api/affinity/add',
+      { subject: p.person, delta: Number(b.dataset.d) });
+  });
+  $('#pplXpSave').onclick = () => {
+    const v = Number($('#pplXp').value);
+    if (!isFinite(v) || v < 0) { toast('数值不对', true); return; }
+    xpApply('api/affinity/set', { subject: p.person, xp: v });
+  };
+  if ($('#pplMergeBtn')) {
+    $('#pplMergeBtn').onclick = () => pplMerge($('#pplMergeSel').value, p.person);
+  }
+}
+
+$('#pplSearch').oninput = () => renderPplList();
+$('#pplScan').onclick = async () => {
+  try {
+    const r = await apiPost('api/people/scan', {});
+    if (r.people) pplData = r.people;
+    const res = r.result || {};
+    const merged = (res.folded || []).length;
+    const learned = (res.learned || []).length;
+    pplSel = (pplData && pplData.people && pplData.people[0]) ? pplData.people[0].person : '';
+    renderPpl();
+    toast(`扫完了：并回 ${merged} 个，学到 ${learned} 个称呼`);
+  } catch (e) {
+    toast(e.message || '重新识别失败', true);
+  }
+};
+
+$('#stageAdd').onclick = () => {
+  const last = stageDraft[stageDraft.length - 1];
+  stageDraft.push({ name: '新阶段', threshold: last ? Number(last.threshold) + 300 : 0 });
+  renderStages();
+};
+
+$('#stageSave').onclick = async () => {
+  const clean = stageDraft
+    .map(s => ({ name: String(s.name || '').trim(), threshold: Number(s.threshold) || 0 }))
+    .filter(s => s.name);
+  if (!clean.length) { toast('至少要有一档有名字', true); return; }
+  try {
+    const r = await apiPost('api/affinity/stages/save', { stages: clean });
+    stageDraft = (r.stages || []).map(s => ({ name: s.name, threshold: s.threshold }));
+    renderStages();
+    await loadPeople(pplSel);
+    toast('阶段表已保存');
+  } catch (e) {
+    toast(e.message || '保存失败', true);
+  }
+};
+
+$('#stageReset').onclick = async () => {
+  try {
+    const r = await apiPost('api/affinity/stages/reset', {});
+    stageDraft = (r.stages || []).map(s => ({ name: s.name, threshold: s.threshold }));
+    renderStages();
+    await loadPeople(pplSel);
+    toast('已恢复默认');
+  } catch (e) {
+    toast(e.message || '重置失败', true);
+  }
+};
+
+/* ================= 总配置 ================= */
+
+let cfgItems = [];
+let cfgPath = '';
+let cfgFails = {};
+let cfgTimer = 0;
+let cfgTouched = false;
+let cfgChain = Promise.resolve();
+
+async function loadCfg() {
+  try {
+    const d = await apiGet('api/config');
+    cfgItems = d.items || [];
+    cfgPath = d.path || '';
+    cfgFails = {};
+    cfgTouched = false;
+    $('#cfgPath').textContent = cfgPath ? `配置文件：${cfgPath}` : '';
+    syncCfgFoot();
+    renderCfg();
+  } catch (e) {
+    toast(e.message || '配置加载失败', true);
+  }
+}
+
+function cfgRow(it) {
+  const warn = String(it.hint || '').startsWith('【');
+  const name = `<div class="cfgname">${esc(it.label)}
+    <div class="cfghint${warn ? ' warn' : ''}">${esc(it.hint || '')}</div></div>`;
+  if (it.type === 'bool') {
+    return `<div class="cfgrow">${name}
+      <label class="sw"><input type="checkbox" data-k="${esc(it.key)}" data-t="bool"${it.value ? ' checked' : ''}><i></i></label>
+      <span class="cfgstat"></span>
+    </div>`;
+  }
+  if (it.type === 'int') {
+    return `<div class="cfgrow">${name}
+      <input class="cfgnum" type="number" data-k="${esc(it.key)}" data-t="int" value="${Number(it.value) || 0}">
+      <span class="cfgstat"></span>
+    </div>`;
+  }
+  return `<div class="cfgrow">${name}
+    <input class="cfgtext" type="text" data-k="${esc(it.key)}" data-t="str"
+      value="${esc(it.value || '')}" placeholder="留空 = 用当前对话模型">
+    <span class="cfgstat"></span>
+  </div>`;
+}
+
+function renderCfg() {
+  const order = [];
+  const map = new Map();
+  const subt = {};
+  for (const it of cfgItems) {
+    if (!map.has(it.group)) { map.set(it.group, []); order.push(it.group); }
+    map.get(it.group).push(it);
+    if (!(it.group in subt)) subt[it.group] = it.group_hint || '';
+  }
+  $('#cfgList').innerHTML = order.map(g => `
+    <div class="cfgsec">
+      <div class="cfgsec-t">${esc(g)}</div>
+      ${subt[g] ? `<div class="cfgsec-hint">${esc(subt[g])}</div>` : ''}
+      ${map.get(g).map(cfgRow).join('')}
+    </div>`).join('');
+}
+
+function cfgReadEl(el) {
+  const t = el.dataset.t;
+  if (t === 'bool') return !!el.checked;
+  if (t === 'int') return Number(el.value) || 0;
+  return String(el.value || '').trim();
+}
+
+/* 跟已保存的值逐项比对，只挑真正变了的字段 */
+function cfgCollect() {
+  const patch = {};
+  $('#cfgList').querySelectorAll('[data-k]').forEach(el => {
+    const key = el.dataset.k, t = el.dataset.t;
+    const now = cfgReadEl(el);
+    const it = cfgItems.find(x => x.key === key);
+    const base = it ? it.value : '';
+    const same = t === 'bool' ? now === !!base
+      : (t === 'int' ? now === Number(base || 0) : now === String(base ?? ''));
+    if (!same) patch[key] = now;
+  });
+  return patch;
+}
+
+function cfgMark(key, state) {
+  const el = $(`#cfgList [data-k="${key}"]`);
+  const row = el && el.closest('.cfgrow');
+  if (!row) return;
+  const s = row.querySelector('.cfgstat');
+  if (!s) return;
+  s.className = 'cfgstat' + (state ? ' show' : '');
+  if (state === 'ok') { s.textContent = '已存'; s.classList.add('ok'); }
+  else if (state === 'fail') { s.textContent = '未存'; s.classList.add('fail'); }
+  else if (state === 'wait') { s.textContent = '待存'; }
+  else if (state === 'saving') { s.textContent = '…'; }
+  else s.textContent = '';
+}
+
+function syncCfgFoot() {
+  const bad = Object.keys(cfgFails).filter(k => cfgFails[k]);
+  const stat = $('#cfgStat');
+  if (bad.length) {
+    stat.textContent = `${bad.length} 项没存上`;
+    stat.style.color = '#d0526b';
+    $('#cfgRetry').style.display = '';
+  } else {
+    stat.textContent = cfgTouched ? '已全部生效' : '';
+    stat.style.color = '';
+    $('#cfgRetry').style.display = 'none';
+  }
+}
+
+/* 保存排队串行跑：上一次没回来时新改动不会被吞掉，最后一次 collect 自然带上全部 */
+function flushCfg() {
+  clearTimeout(cfgTimer);
+  cfgTimer = 0;
+  cfgChain = cfgChain.then(doFlushCfg, doFlushCfg);
+  return cfgChain;
+}
+
+async function doFlushCfg() {
+  const patch = cfgCollect();
+  const keys = Object.keys(patch);
+  if (!keys.length) { syncCfgFoot(); return; }
+  keys.forEach(k => cfgMark(k, 'saving'));
+  try {
+    const d = await apiPost('api/config/set', { patch });
+    (d.items || []).forEach(it => {
+      const old = cfgItems.find(x => x.key === it.key);
+      if (old) old.value = it.value;
+    });
+    keys.forEach(k => {
+      cfgFails[k] = false;
+      cfgMark(k, 'ok');
+      const el = $(`#cfgList [data-k="${k}"]`);
+      const row = el && el.closest('.cfgrow');
+      if (row) { row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash'); }
+    });
+    setTimeout(() => { keys.forEach(k => cfgMark(k, '')); }, 1400);
+    cfgTouched = true;
+  } catch (e) {
+    keys.forEach(k => { cfgFails[k] = true; cfgMark(k, 'fail'); });
+    toast(e.message || '保存失败', true);
+  } finally {
+    syncCfgFoot();
+  }
+}
+
+function cfgQueue(key) {
+  cfgMark(key, 'wait');
+  clearTimeout(cfgTimer);
+  cfgTimer = setTimeout(() => flushCfg(), 300);
+}
+
+/* 开关点一下就存；数字/文本失焦或回车才存，免得每敲一个字符发一次请求 */
+$('#cfgList').addEventListener('change', e => {
+  const el = e.target.closest('[data-k]');
+  if (el) cfgQueue(el.dataset.k);
+});
+$('#cfgList').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.closest('[data-k]')) {
+    e.preventDefault();
+    e.target.blur();
+  }
+});
+$('#cfgRetry').onclick = () => flushCfg();
+$('#cfgReload').onclick = async () => {
+  await flushCfg();
+  cfgFails = {};
+  await loadCfg();
+  toast('已重新读取');
+};
+
+pplSwitch('people');
+switchRel('graph');
+
+loadOverview();
+loadSubjects(false);
+loadHome();
+</script>
+</body>
+</html>
