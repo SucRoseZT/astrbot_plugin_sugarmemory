@@ -1,0 +1,11 @@
+name: astrbot_plugin_sugarmemory
+display_name: "蔗糖的记忆中枢~"
+desc: AstrBot 分层长期记忆：L2 事实 / L3 事件分层存储 + 写入门控（防记忆污染）+ system_prompt 隔离注入（防指令越权）+ 可解释记忆包与 Token 预算；阶段总结单次 LLM 调用产出摘要与断言，只认编号不建人；「一个人 = 一个 QQ + 一串称呼」，昵称/群名片/外号不再把同一个人拆成两个；召回三层（概念归一 / 问法别名 / 语义兜底）+ 记忆生命周期（原文压主题词、90 天消亡）+ 可视化面板（记忆、人物、关系图、Token 用量）
+version: 0.15.4
+author: SucRoseZT
+repo: https://github.com/SucRoseZT/astrbot_plugin_sugarmemory
+tags:
+  - memory
+  - long-term-memory
+  - context
+  - sqlite

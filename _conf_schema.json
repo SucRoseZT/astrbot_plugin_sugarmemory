@@ -1,0 +1,489 @@
+{
+  "_webui_notice": {
+    "description": "⚠️ 先读我：配置请尽量在 WebUI 里改",
+    "type": "string",
+    "hint": "本插件的配置**建议在插件自己的面板里改**：AstrBot WebUI → 插件 → 蔗糖的记忆中枢 → 「总配置」页。那里改完**立刻生效，不用点保存、也不用重载插件**，每一项下面都有人话解释，还能配合「说明」页看它是怎么实现的。\n\n⚠️ **记忆、好感度、注入、总结、主人权限这几组，请一定去 WebUI 里配。** 在这边改了要保存并重载插件才生效，中间面板上看到的还是旧值，很容易两边对不上、改了半天发现没生效。\n\n这里只当兜底：插件没启动、面板打不开的时候，才在这边改。\n\n（本项是说明，不是配置，不用填，忽略即可。）",
+    "default": "",
+    "obvious_hint": true
+  },
+  "memory": {
+    "description": "记忆",
+    "type": "object",
+    "hint": "记忆怎么写、留多久。这是整个插件的地基，后面所有功能都建立在这些数据上。",
+    "items": {
+      "record_enabled": {
+        "description": "记录聊天",
+        "type": "bool",
+        "hint": "把你说的和 AI 回的存成短期记录。关掉之后什么都不记，已有的不受影响",
+        "default": true
+      },
+      "record_in_group": {
+        "description": "群聊写记忆",
+        "type": "bool",
+        "hint": "【强烈不建议开启】本插件没有做群聊方面的适配，也不是为群聊功能服务的。默认就是群聊只读：记忆只给 AI 看，不写入、不加好感度、也不计入总结条数。强行打开会遇到说话人归属错乱、记忆互相串台、额度被群聊白白吃掉",
+        "default": false
+      },
+      "ignore_senders": {
+        "description": "不记这些发送者",
+        "type": "list",
+        "hint": "按昵称排除伪消息。qq_tools 的定时唤醒会伪装成「系统唤醒」发一条消息，sender_id 还是真人 QQ，不排除的话会被当成用户亲口说的话记进记忆和好感度",
+        "default": [
+          "系统唤醒"
+        ],
+        "items": {
+          "type": "string"
+        }
+      },
+      "l3_retention_days": {
+        "description": "聊天保留天数",
+        "type": "int",
+        "hint": "聊天原文存多少天后自动删除。0 = 永久保留（数据库会一直变大）",
+        "default": 14
+      },
+      "l3_skeleton_enabled": {
+        "description": "原文过期压成骨架",
+        "type": "bool",
+        "hint": "开：聊天原文到期后不直接删，先压成一行主题词骨架（如「天气/通勤/咖啡」）再删，骨架自己再保留一阵——「从关键句忘到只剩关键词」。关：到期直接删（原行为）",
+        "default": true
+      },
+      "skeleton_retention_days": {
+        "description": "骨架保留天数",
+        "type": "int",
+        "hint": "骨架（原文压缩后的主题词索引）再保留多少天后彻底删除。只在上一项开启时生效",
+        "default": 90
+      },
+      "decay_stagger_enabled": {
+        "description": "错峰沉底",
+        "type": "bool",
+        "hint": "默认关。同批入库的记忆过期时间几乎一样，会在同一天集体沉底——一沉几十条。打开后每条按自己的编号拿一个固定偏移，在两三个月里陆续沉，面板上看到的是「一直在慢慢忘」，而不是「半年后清一次仓」。只改什么时候沉，不改沉不沉，对注入内容没有影响；沉底是单向的（沉了就不再被检索到），所以真正该调的是保留度参数，这个只是观感开关",
+        "default": false
+      },
+      "decay_stagger_days": {
+        "description": "错峰跨度（天）",
+        "type": "int",
+        "hint": "相位偏移的最大天数，默认 75。设 0 等于关掉错峰。跟保留度曲线叠加：原本 150 天沉底的条目，会落在 150~225 天之间",
+        "default": 75
+      },
+      "record_outbound": {
+        "description": "记录主动发出去的话",
+        "type": "bool",
+        "hint": "AI 通过转述/跨会话发送发给别人的话，也存进记忆。关掉的话，换个会话被问「你刚才跟谁说了什么」，它会查不到记录，然后把自己真发过的话当成编的否认掉",
+        "default": true
+      },
+      "outbound_cause_window": {
+        "description": "找起因的时间范围（秒）",
+        "type": "int",
+        "hint": "记主动发送时，往回找这么久内「谁让它发的、原话怎么说的」，一起钉在记录上。隔几天别人问「你为什么发这个」，靠的就是这段。0 = 不记起因",
+        "default": 180
+      },
+      "record_outbound_other": {
+        "description": "其他主动发送也要记",
+        "type": "bool",
+        "hint": "转述工具发的每一条都带标记、一定记。这项管的是**没带标记**的主动发送——定时推送、插件自发通知、其他插件的带话。开着=照旧记成「你主动发给xxx」；关掉=只记真正的转述，怕定时消息污染记忆就关",
+        "default": true
+      },
+      "outbound_dedup_seconds": {
+        "description": "本会话外发去重（秒）",
+        "type": "int",
+        "hint": "AI 往「刚刚还在聊天的会话」发的不带标记消息（分段回复、send 工具的碎碎念）不再记成「主动发送」——那些话就在当前对话里，再记一遍会把转述通道堵死，真转述反而被挤丢。带标记的转述/定时任务永远照记。0 = 关闭去重，全部照记",
+        "default": 120
+      },
+      "bot_isolation": {
+        "description": "多机器人记忆隔离",
+        "type": "bool",
+        "hint": "一台 AstrBot 跑多个机器人账号（多个平台实例，各自一个 QQ 号）时，记忆按机器人分开：A 的定时任务、转述和对话不会被 B 的记忆包读到，B 也查不到 A 发过什么。以前外发记录是全局的，任何插件调 context.send_message 都会被记成「你说的」，于是没装本插件的工具机器人发的定时消息也会串进主机器人的主动记忆。关掉 = 所有账号共用一套记忆（老行为），只在「多个账号其实是同一个人格」时才关",
+        "default": true
+      }
+    }
+  },
+  "inject": {
+    "description": "注入",
+    "type": "object",
+    "hint": "每轮对话往 AI 提示词里塞什么、塞多少。改动这一组会直接影响回复质量和 token 花费。",
+    "items": {
+      "inject_enabled": {
+        "description": "注入记忆",
+        "type": "bool",
+        "hint": "开着才会把记忆塞进 AI 的 prompt。关掉就是影子模式：照常记录，但 AI 看不见。如果还装了别的记忆类插件，建议关掉这个，否则同样的内容会注入两遍",
+        "default": false
+      },
+      "inject_scope_subject": {
+        "description": "记忆包按人过滤",
+        "type": "bool",
+        "hint": "只注入当前说话人的长期事实和本会话的摘要。关掉＝全库检索，别人说过的事会串到他头上",
+        "default": true
+      },
+      "inject_outbound_relay_limit": {
+        "description": "带几条转述过的话",
+        "type": "int",
+        "hint": "「你替人带给谁的话」最多带几条（发到当前会话的）。转述和定时消息在记忆包里是分开的两段，条数也分开算——混在一起时 AI 会把闹钟提醒说成「我替你带的话」。建议 3（转述是最常被追问的），0 = 不带转述",
+        "default": 3
+      },
+      "inject_outbound_relay_window_hours": {
+        "description": "转述新鲜窗（小时）",
+        "type": "int",
+        "hint": "只有这个时间内的转述才常驻进记忆包，过窗的自动让位——没人会一直追问三天前带的什么话，老转述却因为「最近没新的」一直占坑还优先保留，包越滚越臃肿。第二天有新转述就照旧进，每天都一样。被追问时仍能补召回（不受此窗限制，问了才带）。建议 24，0 = 不过期（一直带）",
+        "default": 24
+      },
+      "inject_outbound_cron_limit": {
+        "description": "带几条定时任务发的话",
+        "type": "int",
+        "hint": "「你按定时任务发出去的话」最多带几条（发到当前会话的）。这类消息是你自己写的提醒原文，不是替谁带的话，所以单独一段、单独配额。建议 2，0 = 不带定时消息",
+        "default": 2
+      },
+      "inject_outbound_cron_window_hours": {
+        "description": "定时新鲜窗（小时）",
+        "type": "int",
+        "hint": "和转述新鲜窗同理，但管的是定时任务池——两个池子独立计时、互不影响。过窗的定时消息不再常驻进包，追问到仍可召回。建议 24，0 = 不过期",
+        "default": 24
+      },
+      "inject_outbound_away_limit": {
+        "description": "被追问时补带几条发到别的会话的转述",
+        "type": "int",
+        "hint": "在 A 会话让 AI 给 B 带完话、回 A 问「你刚才跟 B 说了什么」时，那条记录记在 B 名下，默认进不了记忆包，AI 只能回「我凭记忆」。这一项就是给这种追问开的补位：只有本轮这句话确实在问（说到转述/带话，或点名了对方）才补，平时一条都不带，几乎不占 token。建议 1，0 = 追问也不补",
+        "default": 1
+      },
+      "inject_outbound_away_cron_limit": {
+        "description": "被追问时补带几条发到别的会话的定时消息",
+        "type": "int",
+        "hint": "和上一项同理，但管的是定时任务。只有本轮明确在问定时/提醒/闹钟/那个任务时才补——问「你给 B 带了什么话」不会把闹钟内容塞进来，免得 AI 张冠李戴。建议 1，0 = 追问也不补",
+        "default": 1
+      },
+      "inject_outbound_labeled_only": {
+        "description": "外发段只带定时任务/转述",
+        "type": "bool",
+        "hint": "开着：没触发定时任务或转述时，「你发出去的话」整段不进记忆包，把预算让给摘要和事实；一旦有定时任务/转述，它们会顶到记忆包最前面。关掉：连「你主动发给xxx」这类普通回声也一起进包（信息量低，还会挤预算）",
+        "default": true
+      },
+      "inject_outbound_pinned": {
+        "description": "定时任务/转述不参与裁剪",
+        "type": "bool",
+        "hint": "记忆包超预算时的裁剪顺序里，发给当前会话的定时任务/转述排在最后一道且默认不许砍——它就是「你刚才定时发了什么」的答案本身，砍了 AI 又会把真发过的东西当幻觉否认。关掉=让它跟其他内容一样正常参与裁剪（预算很紧时可以关）",
+        "default": true
+      },
+      "inject_cross_limit": {
+        "description": "带几条其他会话的近况",
+        "type": "int",
+        "hint": "顺便带几条别的会话里最近发生的事，按本轮话题筛过才给，会标出是谁说的。填 0 = 不带（只认自己这个会话）。开太大容易串台",
+        "default": 5
+      },
+      "inject_cross_include_self": {
+        "description": "跨会话也带 AI 自己说的话",
+        "type": "bool",
+        "hint": "其他会话近况里，除了别人说的，要不要把 AI 自己在别的会话说过的话也带进来。AI 一句往往比人多、信息量少，默认关；需要「我记得我在别的会话说过啥」时再开",
+        "default": false
+      },
+      "inject_mode": {
+        "description": "记忆包注入架构",
+        "type": "string",
+        "hint": "填 frozen 或 dynamic。frozen＝按（人,会话）冻结一份常驻包吃满前缀缓存（默认，A 方案）；dynamic＝回到旧版按本轮原话实时检索，每轮都变、前缀缓存基本不命中。dynamic 只用于 A/B 对照或紧急回退，日常请保持 frozen。用量表里用 arch_ver 区分两批数据；切换会让所有活跃分片各重建一次，属预期行为",
+        "default": "frozen"
+      },
+      "inject_dedup": {
+        "description": "冻结常驻记忆包（兼容旧开关）",
+        "type": "bool",
+        "hint": "老开关，只管 frozen 模式下「内容变了要不要真节流」，架构由 inject_mode 决定。开启后常驻包在冻结时长/轮数内不随流水刷新，新写入的长期事实仍立即重建；关掉＝每轮重新生成常驻包，仍不是旧的动态包，只用于排查缓存问题",
+        "default": true
+      },
+      "inject_freeze_seconds": {
+        "description": "常驻包最短冻结秒数",
+        "type": "int",
+        "hint": "记忆包内容变了（新转述、新跨会话消息）也先别换：至少隔这么多秒才允许重建，否则每轮一句新消息就把整段前缀缓存冲掉。默认 180 秒，与服务商缓存 TTL 对齐。填 0 = 只要内容有变化就立刻重建",
+        "default": 180
+      },
+      "inject_freeze_rounds": {
+        "description": "常驻包最多连续多少轮不重建",
+        "type": "int",
+        "hint": "即使没到冻结秒数，聊满这么多轮也允许重建一次，避免快速对话里新记忆迟迟不生效。默认 12 轮。填 0 = 只看秒数",
+        "default": 12
+      },
+      "inject_budget_tokens": {
+        "description": "注入预算",
+        "type": "int",
+        "hint": "这是上限、不是目标：常驻包实际多大由记忆库和各项配额决定（本机实测最厚约 900 tok）。调大不会多花一分钱，只是给记忆增长留余量；调到低于实际体积就会触发裁剪，而裁剪最后会「突破保底」把长期事实砍到 1 条，反而毁掉召回。默认 1200 够用；若把 pack_l2_limit / 转述配额调大，建议同步提到 1400~1600",
+        "default": 1200
+      },
+      "pack_l3_snippets": {
+        "description": "附带聊天原文",
+        "type": "int",
+        "hint": "记忆包里最多带几条聊天原文当参考",
+        "default": 0
+      },
+      "pack_l2_limit": {
+        "description": "长期事实上限",
+        "type": "int",
+        "hint": "记忆包里最多带几条从以往对话里提炼出来的事实",
+        "default": 12
+      },
+      "pack_l2_keep_min": {
+        "description": "长期事实保底条数",
+        "type": "int",
+        "hint": "预算不够时，再挤也要给事实留几条。留 3 条＝至少保住「这个人是谁」的基本盘",
+        "default": 3
+      },
+      "pack_l3_keep_min": {
+        "description": "聊天原文保底条数",
+        "type": "int",
+        "hint": "预算不够时，再挤也要给聊天原文留几条。原文是「他当时原话怎么说的」的唯一来源，砍了补不回来。留 0 ＝允许全砍（旧行为）",
+        "default": 0
+      },
+      "pack_l2_rel_ratio": {
+        "description": "相关性门槛（0~100）",
+        "type": "int",
+        "hint": "本轮消息没提到的事实，命中率低于最高命中的这个百分比就不注入。30 ＝ 命中数不到头名的三成直接丢掉，防止一句「在吗」把十几条无关事实全拽进来。0 ＝ 关闭",
+        "default": 30
+      },
+      "pack_query_expand": {
+        "description": "问法归一（改写补召回）",
+        "type": "bool",
+        "hint": "把「多大了」「搞什么创作」这类口语问法映射成概念词再检索，补上字面匹配抓不住改写的盲区（实测改写召回 20% → 90%+）。关掉回到纯字面匹配",
+        "default": true
+      },
+      "inject_skeleton_limit": {
+        "description": "带几条旧事骨架",
+        "type": "int",
+        "hint": "记忆包常驻几条「旧事骨架」（原文过期后压缩的主题词索引，一行约 30 token）。用户问「咱们以前聊过啥」时 AI 至少有个索引可查。0 = 不注入，骨架只在库里躺着",
+        "default": 2
+      },
+      "pack_semantic_fallback": {
+        "description": "语义兜底（需要模型支持）",
+        "type": "bool",
+        "hint": "字面/概念/问法别名全部零命中时，调模型的向量接口按语义相似度挑保底事实。依赖 Provider 提供向量能力，不支持时自动静默跳过，等于没开",
+        "default": false
+      }
+    }
+  },
+  "summary": {
+    "description": "总结",
+    "type": "object",
+    "hint": "什么时候把聊天压成摘要和长期事实。总结会真的调用模型，所以这里有频率、超时和熔断。",
+    "items": {
+      "summarize_enabled": {
+        "description": "启用阶段总结",
+        "type": "bool",
+        "hint": "攒够一定条数就让 AI 回头看一遍：写一段摘要，顺便挑出值得长期记住的事",
+        "default": true
+      },
+      "summary_interval_messages": {
+        "description": "攒多少条触发",
+        "type": "int",
+        "hint": "同一个会话攒够多少条你说的话触发一次。AI 的回复不计数",
+        "default": 50
+      },
+      "summary_idle_seconds": {
+        "description": "静默等待（秒）",
+        "type": "int",
+        "hint": "攒够之后再等这么久，确认这轮聊完了才开始跑，免得跟你正在进行的对话抢模型",
+        "default": 10
+      },
+      "summary_window_user": {
+        "description": "回顾用户消息数",
+        "type": "int",
+        "hint": "总结时往回取最近多少条用户消息",
+        "default": 60
+      },
+      "summary_window_bot": {
+        "description": "回顾 AI 回复数",
+        "type": "int",
+        "hint": "总结时往回取最近多少条 AI 回复。0 = 不带回复",
+        "default": 30
+      },
+      "summary_related_l2": {
+        "description": "总结时带上已有记忆",
+        "type": "bool",
+        "hint": "把这个人已经记住的长期事实（每条带 #编号）一起喂给总结模型，让它能判断这次说的话是不是在推翻旧内容（改口）。不带的话总结是闭卷答题，只会不断新增，「喜欢摇滚」和「现在只听说唱」会一起躺在库里",
+        "default": true
+      },
+      "summary_related_limit": {
+        "description": "最多带多少条",
+        "type": "int",
+        "hint": "带太多会稀释注意力也费 token；每人十几条时直接全带。0 = 一条都不带",
+        "default": 16
+      },
+      "summary_timeout_seconds": {
+        "description": "单次最长等待（秒）",
+        "type": "int",
+        "hint": "一次总结最多等多久。超时会自动重试 3 次（间隔 2 秒、4 秒）",
+        "default": 120
+      },
+      "summary_provider_id": {
+        "description": "总结专用模型",
+        "type": "string",
+        "hint": "留空＝跟当前对话用同一个模型。填 Provider ID 可以挂个便宜的小模型省钱",
+        "default": ""
+      },
+      "alias_autogen": {
+        "description": "自动生成问法别名",
+        "type": "bool",
+        "hint": "每次总结完成后，让模型给新记下的长期事实顺手生成几个「用户可能怎么问起它」的说法存进库里。检索时问法跟别名能对上字面，改个说法也召回得回来（「多大了」→「16岁」这种）。存量旧事实会在下次总结后分批补齐",
+        "default": true
+      },
+      "summary_reasoning_effort": {
+        "description": "总结思考强度",
+        "type": "string",
+        "hint": "留空＝不干预，由模型自己决定。可选 low / medium / high / max。推理型模型默认能「想」三万多字，实测同一份日志：high 要 190 秒、low 只要 7 秒，摘要质量几乎一样。只作用于总结这一次请求，不影响你聊天",
+        "default": ""
+      },
+      "summary_circuit_threshold": {
+        "description": "连续失败几次就暂停",
+        "type": "int",
+        "hint": "总结连续失败这么多次就暂时不自动跑了，避免一直烧钱。面板上手动点不受影响",
+        "default": 3
+      },
+      "summary_circuit_cooldown": {
+        "description": "暂停多久（秒）",
+        "type": "int",
+        "hint": "暂停多久之后自动试一次，成功就恢复正常",
+        "default": 600
+      }
+    }
+  },
+  "affinity": {
+    "description": "好感度",
+    "type": "object",
+    "hint": "分数怎么涨、阶段怎么分。阶段名同时决定 AI 用什么语气跟你说话。",
+    "items": {
+      "affinity_enabled": {
+        "description": "启用好感度",
+        "type": "bool",
+        "hint": "你每说一条消息就涨一点。越接近上限涨得越慢，到顶之后基本不涨",
+        "default": true
+      },
+      "affinity_cap": {
+        "description": "好感度上限",
+        "type": "int",
+        "hint": "涨到这个数就不再明显增长，之后每条只 +1",
+        "default": 1000
+      },
+      "affinity_tone": {
+        "description": "好感度影响语气",
+        "type": "bool",
+        "hint": "按当前阶段给 AI 一句语气提示，让它回复的亲近程度跟着好感度走",
+        "default": true
+      }
+    }
+  },
+  "relation": {
+    "description": "人际关系",
+    "type": "object",
+    "hint": "人和人关系网的全部配置都在这一组：总开关、注入快照、AI 的读写工具和权限。总开关默认关——关掉后对话不注入关系、记忆包里不带关系、AI 也不能读写关系，面板上会标「当前此功能为关闭」。不需要这个功能就让它一直关着，一点 token 都不花。",
+    "items": {
+      "inject_relations": {
+        "description": "人际关系网总开关",
+        "type": "bool",
+        "hint": "整个关系网系统的总开关。关（默认）＝三件事全停：对话不注入关系快照、记忆包里不带关系、AI 的记/查关系工具一并禁用，一点 token 都不花；面板「人际关系」页会显示「当前此功能为关闭」。开＝每轮对话附一小段「你和这个人是什么关系」（几十 token，不用 AI 调工具）+ AI 可以从对话里记关系",
+        "default": false
+      },
+      "inject_relation_limit": {
+        "description": "关系快照最多几条",
+        "type": "int",
+        "hint": "这段快照最多列几条关系。列得越多越占 token",
+        "default": 6
+      },
+      "tool_relation_write": {
+        "description": "允许 AI 记关系",
+        "type": "bool",
+        "hint": "让 AI 能调用「记关系」，从对话里自己抓到「A 是 B 的某某」并写下来。总开关关着时这项不生效",
+        "default": false
+      },
+      "tool_relation_query": {
+        "description": "允许 AI 查关系",
+        "type": "bool",
+        "hint": "让 AI 能调用「查关系」，回答之前先查一下谁跟谁是什么关系。总开关关着时这项不生效",
+        "default": false
+      },
+      "tool_write_in_group": {
+        "description": "群里允许改关系",
+        "type": "bool",
+        "hint": "默认群里只能查、不能改。开之前想清楚：群里任何人说话都可能触发写入",
+        "default": false
+      },
+      "tool_relation_quote_check": {
+        "description": "只认本轮原话",
+        "type": "bool",
+        "hint": "AI 想记的两个人，至少有一个要出现在你这条消息里。防止它被记忆包、别人的转述、贴进来的网页骗去乱写",
+        "default": true
+      },
+      "tool_idem_seconds": {
+        "description": "防重复写入（秒）",
+        "type": "int",
+        "hint": "同一条关系在这个时间内重复提交只算一次，防 AI 重试时反复写。0 = 关闭",
+        "default": 120
+      },
+      "tool_relation_admin_ids": {
+        "description": "额外授权名单",
+        "type": "string",
+        "hint": "填 QQ 号 / sender_id，多个用逗号或空格隔开。名单里的人当主人看待。注意：AstrBot 管理员本身就算主人，不用填；你自己不是管理员又想用下面那些限制，就把自己填进来",
+        "default": ""
+      },
+      "tool_relation_write_admin_only": {
+        "description": "改关系只限主人",
+        "type": "bool",
+        "hint": "开启后只有主人能通过 AI 改关系，普通用户明说也不写。默认关（谁都能让 AI 记，但受下面「只能记跟自己有关」约束）",
+        "default": false
+      },
+      "tool_relation_query_admin_only": {
+        "description": "查关系只限主人",
+        "type": "bool",
+        "hint": "开启后只有主人能通过 AI 查关系。默认关，因为查是只读的，一般不需要拦",
+        "default": false
+      },
+      "tool_relation_self_only": {
+        "description": "只能记跟自己有关的关系",
+        "type": "bool",
+        "hint": "开启后非主人只能记「他自己」跟别人的关系，碰不到两个第三人之间的关系。防的是：群里随便谁一句「张三和李四是情侣」，AI 就替他把别人的关系改了。默认开",
+        "default": true
+      },
+      "alias_cleanup_enabled": {
+        "description": "称呼自带遗忘",
+        "type": "bool",
+        "hint": "默认开。人的称呼分四档：显示名、能被称呼的名、绰号外号、叫错的名字。只有后两档会被忘掉，前两档永不自动删（那是这个人的身份）。关掉的话所有称呼都永久留着，面板「人际关系」里会越堆越多",
+        "default": true
+      },
+      "alias_guess_retention_days": {
+        "description": "叫错的名字留多久（天）",
+        "type": "int",
+        "hint": "默认 90。AI 从对话里听岔、写错的名字归这一档，这么多天没再出现就自动删掉。只删称呼映射，人物和记忆一条不动",
+        "default": 90
+      },
+      "alias_nick_retention_days": {
+        "description": "外号留多久（天）",
+        "type": "int",
+        "hint": "默认 365。绰号外号这么久没被叫过、而且从头到尾只叫过一次，才会被清。叫过两次以上的一直留着",
+        "default": 365
+      }
+    }
+  },
+  "usage": {
+    "description": "用量",
+    "type": "object",
+    "hint": "token 记账开关。只影响统计，不影响任何功能。",
+    "items": {
+      "token_stats_enabled": {
+        "description": "记录 Token 用量",
+        "type": "bool",
+        "hint": "记录对话、总结、注入各花了多少 token。关掉之后面板「Token 用量」就没有数据",
+        "default": true
+      }
+    }
+  },
+  "tool": {
+    "description": "给 AI 的工具",
+    "type": "object",
+    "hint": "工具本身的行为：挂不挂载、群里能不能写、写之前校验什么。",
+    "items": {
+      "tool_memory_search": {
+        "description": "允许 AI 查记忆",
+        "type": "bool",
+        "hint": "给 AI 一个「翻自己的记忆」的工具（memory_search）。注入包是被动的、按预算裁过，用户问「你刚才发什么」「我们之前聊过什么」时包里未必有——有这个工具 AI 就能主动去库里翻，而不是两手一摊说没印象。只读，不写任何东西",
+        "default": true
+      },
+      "tool_outbound_history": {
+        "description": "允许 AI 翻外发历史",
+        "type": "bool",
+        "hint": "给 AI 一个「翻自己发出去的话」的工具（outbound_history）：按时间列出转述/定时任务的历史记录，可按类型和时间范围筛。记忆包只带新鲜窗内的转述/定时，更早的只有这个工具能完整翻到。只读，不写任何东西",
+        "default": true
+      }
+    }
+  }
+}

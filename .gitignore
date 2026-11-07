@@ -1,0 +1,33 @@
+# 运行时数据：插件自己会在 data/ 下建库、存图，这些绝不进仓库
+__pycache__/
+*.py[cod]
+*.pyo
+data/
+cache/
+logs/
+*.log
+
+# 记忆数据库和它的备份（含真实聊天记录、QQ 号、昵称）
+*.db
+*.db-*
+*.db.*
+*.sqlite
+*.sqlite3
+*.bak
+*.bak-*
+*.orig
+*.rej
+
+# 本地环境
+.env
+.env.*
+.venv/
+venv/
+.pytest_cache/
+.vscode/
+.idea/
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
