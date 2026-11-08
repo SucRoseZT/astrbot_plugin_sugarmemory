@@ -24,13 +24,16 @@ import time
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 
-from sugarmemory_core.store import SugarStore  # noqa: E402
+from sugarmemory_core.store import SugarStore, PERMANENT_PREDICATES  # noqa: E402
 from sugarmemory_core.pack import PackBuilder  # noqa: E402
-from sugarmemory_core.injector import build_block, estimate_tokens  # noqa: E402
+from sugarmemory_core.injector import (  # noqa: E402
+    build_block, estimate_tokens, trim_pack)
 
 # build_block 对固定 pack 的输出指纹。模板有**有意**改动时再更新这个值，
 # 更新前请确认你接受「所有活跃会话下一轮全部 Cache Miss」的代价。
-GOLDEN_BLOCK_FP = "7a0fdb0a32575051"
+# 2026-11-08：L2 段前加了常量的时间说明行（值里的「今晚」指的是记下那天），
+# 故意改了模板 → 每会话一次性 Cache Miss，之后照旧稳定。
+GOLDEN_BLOCK_FP = "1cb093dd65fe46b9"
 
 MAIN_SRC = open(os.path.join(ROOT, "main.py"), encoding="utf-8").read()
 TREE = ast.parse(MAIN_SRC)
@@ -51,6 +54,9 @@ def _literal(name):
 CFG_DEFAULTS = _literal("CFG_DEFAULTS")
 PROMPT_CFG_KEYS = _literal("PROMPT_CFG_KEYS")
 CACHE_MAX = _literal("INJECT_CACHE_MAX")
+# 0.16.15 起「话题防抖窗口」已移除（fp 变了就重建）。常量保留为 0，
+# 只当「把 built_at 往前推」的测试辅助，不再参与任何判定。
+TOPIC_MIN_INTERVAL = 0.0
 
 import logging  # noqa: E402
 
@@ -58,10 +64,14 @@ NS = {
     "hashlib": hashlib, "time": time,
     "logger": logging.getLogger("frozen_stability"),
     "build_block": build_block, "estimate_tokens": estimate_tokens,
+    "trim_pack": trim_pack, "PERMANENT_PREDICATES": PERMANENT_PREDICATES,
+    "TOPIC_MIN_INTERVAL": TOPIC_MIN_INTERVAL,
     "CFG_DEFAULTS": CFG_DEFAULTS, "PROMPT_CFG_KEYS": PROMPT_CFG_KEYS,
     "INJECT_CACHE_MAX": CACHE_MAX,
 }
-for _name in ("_cfg_fp", "_inject_mode", "_frozen_block"):
+NS.setdefault("re", __import__("re"))
+for _name in ("_cfg_fp", "_inject_mode", "_is_noise_reply",
+              "_resident_l2_n", "_frozen_block"):
     exec(textwrap.dedent(ast.get_source_segment(MAIN_SRC, _fn(_name))), NS)
 
 
@@ -82,6 +92,7 @@ class CountingStore:
 class FakeSelf:
     _cfg_fp = NS["_cfg_fp"]
     _inject_mode = NS["_inject_mode"]
+    _resident_l2_n = NS["_resident_l2_n"]
     _frozen_block = NS["_frozen_block"]
 
     def __init__(self, store):
@@ -93,7 +104,8 @@ class FakeSelf:
         return self.config.get(key, default)
 
     def _pack_builder(self, subject="", session_id="", extra_subjects=None,
-                      l2_keep_min_override=None, lite=False, bot_id=""):
+                      l2_keep_min_override=None, lite=False, bot_id="",
+                      semantic_scores=None):
         return PackBuilder(
             self.store,
             l2_limit=int(self._cfg("pack_l2_limit", 12)),
@@ -137,6 +149,32 @@ def _fixture_db(path):
             " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             ("L2", "测试人", pred, val, "测试人", "chat", f"fp{i}",
              0.95, "active", 0.9, ts + i, ts + i, ts + i))
+    con.commit()
+    return store
+
+
+def _fixture_db_multi(path):
+    """7 条事实：6 条高置信 + 1 条极低置信（喜欢潜水），用来制造一条
+    「包外」事实，验证话题刷新到底往块的哪个位置追加。"""
+    store = SugarStore(path)
+    con = store._db
+    ts = 1767225600.0
+    rows = [
+        ("生活习惯", "喜欢喝茶"), ("爱好技能", "会下棋"),
+        ("自我相关", "今年 20 岁"), ("饮食偏好", "爱吃辣"),
+        ("作息", "通常晚睡"), ("社交", "朋友很多"),
+        ("运动爱好", "喜欢潜水"),  # 极低置信 → 留在常驻包外
+    ]
+    for i, (pred, val) in enumerate(rows):
+        is_outlier = (pred == "运动爱好")
+        conf = 0.20 if is_outlier else 0.92
+        stab = 0.20 if is_outlier else 0.90
+        con.execute(
+            "INSERT INTO l2_facts (layer,subject,predicate,value,speaker,source_type,"
+            "fingerprint,confidence,status,stability,created_at,updated_at,stored_at)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            ("L2", "测试人", pred, val, "测试人", "chat", f"fp{i}",
+             conf, "active", stab, ts + i, ts + i, ts + i))
     con.commit()
     return store
 
@@ -210,6 +248,47 @@ def main():
         assert len(c_lite.calls) < len(c_full.calls)
         assert p_lite.get("_lite") is True
         print("    ✓ 统计轨不再付两次全量检索的钱")
+
+        # ── 6) 话题命中 = 只追加后缀，前缀（常驻底档）字节不变 ────────
+        # 用户最关心的缓存语义：话题刷新到底会不会废掉前缀。直接冻结路径验证。
+        tmp2 = tempfile.mkdtemp(prefix="sugarmem_fz6_")
+        store2 = None
+        try:
+            store2 = _fixture_db_multi(os.path.join(tmp2, "fx.db"))
+            f2 = FakeSelf(store2)
+            f2.config["pack_l2_limit"] = 6  # 6 进常驻，极低那条「喜欢潜水」留在包外
+            # 先拿基线冻结块（闲聊，无话题）
+            b0, _p0, _r0, m0 = f2._frozen_block("测试人", "S2", 4000, rel_text="")
+            assert "潜水" not in b0, "包外事实泄漏进常驻底档"
+            # 本轮聊到「潜水」：统计轨给出 topic_ids=[潜水那条 id=7]，触发增量
+            b1, _p1, _r1, m1 = f2._frozen_block(
+                "测试人", "S2", 4000, rel_text="",
+                topic_ids=[7], topic_signal=True,
+                topic_query="你潜水的时候害怕吗",
+                recent_queries=["你潜水的时候害怕吗"])
+            print(f"[6] 基线 fp={m0['fp']} → 话题命中 fp={m1['fp']} reason={m1['reason']}")
+            assert m1["reason"] == "fp_changed", "话题刷新没触发"
+
+            def _l2(block):
+                return [ln for ln in block.splitlines() if "L2|" in ln]
+
+            l0, l1 = _l2(b0), _l2(b1)
+            n = len(l0)
+            assert n == 6, "L2 条数异常"
+            pfx = max(1, f2._cfg("pack_l2_limit", 6) - f2._cfg("inject_topic_extra", 3))
+            # 关键缓存语义：话题刷新只动【尾部】事实，前 pfx 条逐字节不变 →
+            # provider 前缀缓存（占 token 大头）整段命中，只重算尾部槽位。
+            assert l0[:pfx] == l1[:pfx], "话题刷新改动了前缀事实，前缀缓存白废"
+            # 话题事实进了尾部（最后 tail_k 条），不在前缀
+            tail = " ".join(l1[pfx:])
+            assert "潜水" in tail and "潜水" not in " ".join(l0[pfx:]), \
+                "话题事实没补进尾部"
+            assert b1 != b0, "话题刷新没产生任何字节变化"
+            print(f"    ✓ 话题命中=只换尾部事实，前 {pfx} 条前缀逐字节不变 → 前缀缓存命中率最大化")
+        finally:
+            if store2 is not None:
+                store2._db.close()
+            shutil.rmtree(tmp2, ignore_errors=True)
 
         print("\nALL CHECKS PASSED")
     finally:

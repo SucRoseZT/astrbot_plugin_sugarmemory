@@ -181,14 +181,27 @@ for i in range(20):
     add("阿明", "经历", f"上班路上碰到的第 {i} 件小事，地铁又晚点了")
 add("阿明", "自我相关", "有严重的青霉素过敏")
 add("阿明", "其他", "紧急联系人是姐姐 13800000000")
+# 话题驱动构建：本轮相关的事实（经历）绝不该被永久槽位挤掉去给不相关的
+# 永久分类让位——这正是 0.16.1 之后修掉的召回 bug。
 pb = PackBuilder(store, subject="阿明", session_id="t", l2_limit=12,
                  l3_snippets=0, skeleton_limit=0)
 pack = pb.build("地铁又晚点了", budget_tokens=900)
 preds = [r["predicate"] for r in pack["l2"]]
-check("配额生效：底档挤进了前 12", "自我相关" in preds and "其他" in preds, str(preds))
+check("相关性高的没被配额挤空", preds.count("经历") >= 3, str(preds))
 check("条数没超上限", len(pack["l2"]) <= 12, str(len(pack["l2"])))
-check("相关性高的还在（没被配额挤空）", len(preds) >= 3, str(len(preds)))
-check("配额不抢光名额", preds.count("自我相关") + preds.count("其他") <= 4, str(preds))
+
+# 常驻底档（query=\"\"）：身份/联系方式类事实必须常驻，不被分数排序挤掉。
+# 故意给永久分类低置信、很旧，验证配额逻辑会主动把它们拉进前 12。
+for i in range(12):
+    add("阿强", "经历", f"第 {i} 件旧事", conf=0.95, ts=NOW - 10 * DAY)
+add("阿强", "自我相关", "对花生过敏", conf=0.3, ts=NOW - 400 * DAY)
+add("阿强", "其他", "电话 13900000000", conf=0.3, ts=NOW - 400 * DAY)
+pb0 = PackBuilder(store, subject="阿强", session_id="t", l2_limit=12,
+                  l3_snippets=0, skeleton_limit=0)
+pack0 = pb0.build("", budget_tokens=900)
+preds0 = [r["predicate"] for r in pack0["l2"]]
+check("底档配额生效：永久分类常驻", "自我相关" in preds0 and "其他" in preds0, str(preds0))
+check("底档配额不抢光名额", preds0.count("自我相关") + preds0.count("其他") <= 4, str(preds0))
 
 # 没有永久分类可用时不该硬塞
 pb2 = PackBuilder(store, subject="小周", session_id="t", l2_limit=12,

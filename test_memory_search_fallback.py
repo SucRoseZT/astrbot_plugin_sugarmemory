@@ -41,17 +41,20 @@ class _Filter:
 
 
 class _Logger:
-    def info(self, *a):
+    def info(self, *a, **kw):
         pass
 
-    def warning(self, *a):
+    def warning(self, *a, **kw):
         pass
 
-    def error(self, *a):
+    def error(self, *a, **kw):
         print("[ERROR]", *a)
 
-    def debug(self, *a):
+    def debug(self, *a, **kw):
         pass
+
+    def exception(self, *a, **kw):
+        print("[EXCEPTION]", *a)
 
 
 class AstrBotConfig(dict):

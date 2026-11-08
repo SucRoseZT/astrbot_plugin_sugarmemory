@@ -172,8 +172,14 @@ async def main():
     check("分 4 段", st.get("done_blocks") == 4, str(st.get("done_blocks")))
     check("处理 60 条", st.get("items") == 60, str(st.get("items")))
     check("调用次数等于段数", len(BLOCKS) == 4, str(len(BLOCKS)))
-    check("第 1 段是今天那 10 条", BLOCKS[0].count("\n") + 1 == 10 and "T-0" in BLOCKS[0],
-          str(BLOCKS[0].count("\n") + 1))
+    # 0.16.12 起 transcript 每换一天会插一行「—— 2026-11-06 ——」，
+    # 数消息条数时要把分隔行排除，否则永远差 1 条。
+    def _msgs(block: str) -> list[str]:
+        return [ln for ln in block.splitlines()
+                if not (ln.startswith("—— ") and ln.endswith(" ——"))]
+
+    check("第 1 段是今天那 10 条", len(_msgs(BLOCKS[0])) == 10 and "T-0" in BLOCKS[0],
+          str(len(_msgs(BLOCKS[0]))))
     check("第 1 段没混进昨天的话", "Y-0" not in BLOCKS[0])
     check("第 2 段是昨天前 20 条", "Y-0" in BLOCKS[1] and "Y-19" in BLOCKS[1]
           and "Y-20" not in BLOCKS[1])

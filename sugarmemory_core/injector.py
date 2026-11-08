@@ -291,7 +291,7 @@ def build_block(pack: dict) -> str:
             _summary = _summary.replace(_nk, _sh)
     if _summary:
         lines.append(f"相关会话摘要：{_summary}")
-    for a in pack.get("l2", []):
+    def _l2_line(a: dict) -> str:
         src = a.get("source_msg_id") or "—"
         value = _render_l2_value(a.get("value", ""), pack.get("query", ""))
         # 时间锚用 created_at（这条事实最早被记下的时间），不是 updated_at——
@@ -307,10 +307,30 @@ def build_block(pack: dict) -> str:
         for _nk, _sh in _pairs_all.items():
             if _nk and _nk in value:
                 value = value.replace(_nk, _sh)
-        lines.append(
+        return (
             f"- [L2|置信{float(a.get('confidence', 0)):.2f}|出处#{src}{when}]"
             f" {who}的{a.get('predicate')}：{value}"
         )
+
+    # 本轮话题追加的事实（_topic_add）**不在这里渲染**，统一挪到整块最末尾。
+    # 插在 L2 中间时，后面那些跨会话 / 骨架 / 外发段一个字节都没改，也会因为
+    # 位置整体后移而全部失效——实测整块前缀命中率被拖到 65% 左右，看着像
+    # 「冻结根本没生效」。挪到末尾后常驻前缀和中间所有段逐字节不变，
+    # 每轮真正要重算的就只剩尾部那几条。
+    #
+    # 这句时间说明是常量（2026-11-08）：老数据里的「今晚」「昨天」是蒸馏时留下的
+    # 相对时间，行首锚虽然是绝对时刻，模型不会自动把两者绑起来，会读成「现在这
+    # 一晚」。写成常量而不是逐条改写 value——常量进前缀后缓存命中几乎零成本，
+    # 逐条改写反而每次改字面量都要废一次前缀。
+    if pack.get("l2"):
+        lines.append(
+            "- （L2 后面「·2026-11-06 20:29」是这条被记下的时刻；"
+            "值里若写「今晚」「昨天」，指的是那一天，不是当前这轮对话）"
+        )
+    for a in pack.get("l2", []):
+        if a.get("_topic_add"):
+            continue
+        lines.append(_l2_line(a))
     _section(away_relay, "- [转述｜你替人带给其他会话的话]", here=False)
     _section(away_cron, "- [定时提醒｜你按任务发到其他会话的话]", here=False)
     _section(away_other, "- [你发到其他会话的其他话]", here=False)
@@ -374,6 +394,13 @@ def build_block(pack: dict) -> str:
         lines.append(
             f"- [另有 {len(excluded)} 条被门控筛除（重复或临时状态，别提）：{reasons}]"
         )
+    # 最后才写本轮话题召回的几条：它们是整块里唯一每轮都在变的部分，
+    # 必须压在 BLOCK_FOOTER 前面，这样前面所有内容的位置都不受它们影响。
+    _tail_rows = [a for a in (pack.get("l2") or []) if a.get("_topic_add")]
+    if _tail_rows:
+        lines.append("- [跟着这轮话题想起来的几件事]")
+        for a in _tail_rows:
+            lines.append(_l2_line(a))
     # trim_notes 只留在 pack 里给面板看，不进注入块：说明本身要占 token，
     # 而「裁掉了什么」对模型没有价值，把被裁内容的前 20 字塞回去更是白烧预算。
     lines.append(BLOCK_FOOTER)
@@ -407,10 +434,12 @@ def trim_pack(pack: dict, budget_tokens: int,
         # 按本轮话题的相关度砍（_score 里已经含了置信度和稳定性），
         # 没有 _score 时退回按置信度。纯按置信度砍会把「跟这轮最相关、
         # 但当初记得不太确定」的那条扔掉，正好扔掉用户要问的那条。
-        # 点名保底行（_extra_pin：被点名的人至少 1 条档案）不参与候选——
-        # 它通常 _rel=0 分最低，不豁免的话刚被保底塞进来转头就被这里裁掉，
-        # 「点名却查无此人」又回来了。全剩保底行时才允许动它们。
-        _unpinned = [r for r in pack["l2"] if not r.get("_extra_pin")]
+        # 点名保底行（_extra_pin）和话题增量行（_topic_add）不参与候选：
+        # 前者通常 _rel=0 分最低，不豁免的话刚被保底塞进来转头就被这里裁掉，
+        # 「点名却查无此人」又回来了；后者是本轮唯一真正对着问题捞出来的
+        # 答案，砍它等于话题刷新白做。全剩受保护行时才允许动它们。
+        _unpinned = [r for r in pack["l2"]
+                     if not r.get("_extra_pin") and not r.get("_topic_add")]
         if not _unpinned:
             _unpinned = pack["l2"]
         return min(_unpinned,

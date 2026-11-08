@@ -57,6 +57,20 @@ check("没归属人的行不给号", lines[4].startswith("[?]"), lines[4])
 check("名单只有真人", roster == {1: "张三", 2: "阿P"}, roster)
 check("名单渲染带 0=AI", roster_text(roster).startswith("0=AI"), roster_text(roster))
 
+# 日期分隔行（2026-11-08）：模型看不到 created_at，「到时候」会被编成「今晚」。
+# 规则：一天一行、插在当天内容之前；没有 created_at 的老数据/测试行不插。
+_t0 = 1793968140.0          # 2026-11-06 20:29
+_day_rows = [
+    {"event_type": "user_message", "subject": "张三", "content": "a", "created_at": _t0},
+    {"event_type": "user_message", "subject": "张三", "content": "b", "created_at": _t0 + 60},
+    {"event_type": "user_message", "subject": "张三", "content": "c", "created_at": _t0 + 86400},
+]
+_dl, _ = number_transcript(_day_rows)
+check("同一天只插一行日期", sum(1 for x in _dl if x.startswith("—— ")) == 2, _dl)
+check("日期行排在当天内容之前", _dl[0].startswith("—— "), _dl)
+check("日期行格式", _dl[0] == "—— 2026-11-06 ——", _dl[0])
+check("无 created_at 不插日期行", not any(x.startswith("—— ") for x in lines), lines)
+
 # ---------- 2. 按编号落库 ----------
 s = fresh("ok")
 s.person_ensure("张三", qq="10001", source="event")

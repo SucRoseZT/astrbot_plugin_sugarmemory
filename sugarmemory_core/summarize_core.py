@@ -84,7 +84,18 @@ SUMMARY_SYSTEM_PROMPT = (
     "- 只从对话里提取说话人亲口陈述的事实/偏好；转述、角色扮演、玩笑、临时情绪一律标对应 speech_act；\n"
     "- 绝不要把 AI 自己说过的话写成断言；\n"
     "- 没有可提取的就给空数组；宁缺毋滥。\n"
+    "- source_quote 必须填用户说这句话时的【完整原句】，不要只截取支撑该断言的一小段；"
+    "若一句长话被拆成多条断言，每条的 source_quote 都填那句完整原话"
+    "（之后才能按整句原话召回，而不是只剩碎片）。\n"
     "时间与因果规则：\n"
+    "- 日志里形如「—— 2026-11-06 ——」的是日期分隔线：它下面每一行都发生在那一天（本地时间）；\n"
+    "- 有日期分隔线时，用户用了相对时间（今晚/明早/昨天/前几天/上周/这周末/刚才）的，"
+    "value 必须换算成那一天的绝对日期（✗「打算今晚好好睡一觉」→ ✓「打算 2026-11-06 晚上"
+    "好好睡一觉」）：你并不知道今天是几号，照抄「今晚」以后会被当成当天说的事；\n"
+    "- 日志里没有日期分隔线时，不许自己补任何日期，也不许把「今晚」改成具体某天；\n"
+    "- 无论有没有分隔线，用户没说时间就严禁自己加时间词。原话是「到时候」「改天」"
+    "「以后有机会」，value 里就照原样含糊（✗ 原话「我到时候好好睡一觉」写成"
+    "「打算今晚好好睡一觉」——「今晚」是凭空来的）；\n"
     "- 对话里出现先后变化（「之前做A后来改做B」「以前…现在不…了」「换成/改用」）时，"
     "value 必须保留先后顺序：写「以前做A风格音乐，现已改做B风格」，"
     "严禁压成并列的现在时（✗「认为A难听，做B风格」——这丢掉了先后）；\n"
@@ -284,6 +295,24 @@ def _bigrams_of(text: str) -> set:
     return {s[i:i + 2] for i in range(len(s) - 1)} if len(s) > 1 else set()
 
 
+def _day_label(ts) -> str:
+    """created_at → 「2026-11-06」。取不到或非法就返回空串。
+
+    老数据/测试构造的行没有 created_at，返回空串让调用方跳过日期行，
+    行为与历史版本逐字节一致。
+    """
+    try:
+        v = float(ts or 0)
+    except (TypeError, ValueError):
+        return ""
+    if v <= 0:
+        return ""
+    try:
+        return time.strftime("%Y-%m-%d", time.localtime(v))
+    except (OSError, OverflowError, ValueError):
+        return ""
+
+
 def number_transcript(rows) -> tuple[list[str], dict]:
     """给这次总结的每条日志打上说话人编号，返回 (带编号的行, {编号: 真名})。
 
@@ -292,13 +321,23 @@ def number_transcript(rows) -> tuple[list[str], dict]:
     从名单里挑；挑不出来（或编一个不存在的号）这条就直接丢，不会造人。
 
     0 号固定留给 AI。名单按出现顺序编号，同一会话里通常只有 1~2 个人。
+
+    每换一天插一行「—— 2026-11-06 ——」（2026-11-08）：以前只给内容不给时间，
+    模型看见了「到时候」「今晚」却不知道这批话是哪天说的，实测把它编成了
+    「打算今晚好好睡一觉」并永久落库——那条原话其实是「我到时候好好睡一觉」。
+    分隔线一天一行，比每行都挂时间戳省 token，语义也够（「今晚」= 那天晚上）。
     """
     id_of: dict[str, int] = {}
     lines: list[str] = []
+    last_day = ""
     for r in rows:
         content = str(r.get("content") or "").strip()
         if not content:
             continue
+        day = _day_label(r.get("created_at"))
+        if day and day != last_day:
+            lines.append(f"—— {day} ——")
+            last_day = day
         subject = str(r.get("subject") or "").strip()
         is_bot = (str(r.get("event_type") or "") == "bot_reply"
                   or content.startswith("[你]"))
@@ -381,10 +420,26 @@ def chunk_transcript(lines: list[str], budget: int = 6000) -> list[str]:
     chunks: list[str] = []
     cur: list[str] = []
     n = 0
+    # 切块可能正好切在日期分隔线之后：下一块开头就只剩「[1] 内容」，
+    # 模型又不知道这是哪天的对话了。记住当前所在的那一天，换块时补到开头。
+    day_ctx = ""
     for ln in lines:
+        if ln.startswith("—— ") and ln.endswith(" ——"):
+            day_ctx = ln
         if cur and n + len(ln) + 1 > budget:
+            # 末尾孤立的日期行要摘下来交下一块：留在这一块的尾巴，
+            # 模型会把上面那些话算进这一天（其实这一天还没开始说）。
+            carry = ""
+            if cur[-1].startswith("—— ") and cur[-1].endswith(" ——"):
+                carry = cur.pop()
             chunks.append("\n".join(cur))
             cur, n = [], 0
+            if carry:
+                cur.append(carry)
+                n += len(carry) + 1
+            elif day_ctx and not (ln.startswith("—— ") and ln.endswith(" ——")):
+                cur.append(day_ctx)
+                n += len(day_ctx) + 1
         cur.append(ln)
         n += len(ln) + 1
     if cur:

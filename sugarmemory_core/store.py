@@ -274,6 +274,18 @@ def count_conversations(rows: list[dict]) -> int:
     return len(convs)
 
 
+def _bigrams(text: str) -> set[str]:
+    text = re.sub(r"\s+", "", str(text or ""))
+    if len(text) < 2:
+        return {text} if text else set()
+    return {text[i: i + 2] for i in range(len(text) - 1)}
+
+
+def _l2_text(row: dict) -> str:
+    return (f"{row.get('subject', '')}{row.get('predicate', '')}"
+            f"{row.get('value', '')}{row.get('ask_alias', '')}")
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS l2_facts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -400,7 +412,11 @@ CREATE TABLE IF NOT EXISTS token_usage (
   -- 2026-11-06 归因列：重建到底是因为改了配置、L2 改写、节流到点，
   -- 还是「插件重载后内存缓存被清空」。最后一种（cold/reload）字节往往
   -- 一个都没变，provider 缓存理论上还在，整轮 0% 属于固定正常，不该算失败样本。
-  rebuild_reason TEXT NOT NULL DEFAULT ''
+  rebuild_reason TEXT NOT NULL DEFAULT '',
+  -- 2026-11-08：常驻底档（prefix 那 12 条 L2）自己的指纹，与整块 inject_fp 分开记。
+  -- inject_fp 含本轮话题尾部，换个话题就变；用它判「漂移」会把正常的话题刷新
+  -- 全算成故障。真正该盯的是这一列：它一变才说明常驻前缀被改写了。
+  prefix_sig TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_tok_ts ON token_usage(ts);
 CREATE INDEX IF NOT EXISTS idx_tok_mod ON token_usage(module, ts);
@@ -888,6 +904,7 @@ class SugarStore:
             ("freeze_rounds", "INTEGER NOT NULL DEFAULT 0"),
             ("cfg_ver", "TEXT NOT NULL DEFAULT ''"),
             ("rebuild_reason", "TEXT NOT NULL DEFAULT ''"),
+            ("prefix_sig", "TEXT NOT NULL DEFAULT ''"),
         ):
             if col not in tok_cols:
                 self._db.execute(f"ALTER TABLE token_usage ADD COLUMN {col} {ddl}")
@@ -1230,25 +1247,57 @@ class SugarStore:
         hits.sort(key=len, reverse=True)
         return hits[: max(1, int(limit))]
 
-    def query_active_l2(self, subject: str | None = None, limit: int = 60) -> list[dict]:
-        """查询 active L2（带出处/置信度）。与 L3 查询完全隔离。"""
+    def query_active_l2(self, subject: str | None = None, limit: int = 60,
+                        query: str = "", candidate_limit: int = 200) -> list[dict]:
+        """查询 active L2（带出处/置信度）。与 L3 查询完全隔离。
+
+        query 非空时走「先过滤、后截断」：SQL 只按作用域 / 状态 / 有效期过滤，
+        不先按置信度 LIMIT，再在 Python 里按本轮 bigram 相关度排序取 top limit。
+        旧的 `ORDER BY confidence ... LIMIT 80` 会让攒到 80 条以上的用户，
+        低置信但本轮高度相关的事实永远进不了候选池，相关性排序根本没机会发力。
+
+        query 为空时保持旧行为（按置信度排序），常驻包 / 面板 / memory_search
+        这些不按本轮话题取材的路径不受影响。
+        """
         now = time.time()
+        lim = max(1, int(limit or 60))
+        cap = int(candidate_limit or 0)
+        if cap > 0:
+            lim = min(lim, cap)  # 只压返回条数，不做预截断
+        q = str(query or "").strip()
         with self._lock:
             if subject:
-                rows = self._db.execute(
-                    "SELECT * FROM l2_facts WHERE status='active' AND subject=?"
-                    " AND (expires_at = 0 OR expires_at > ?)"
-                    " ORDER BY confidence DESC, stability DESC, updated_at DESC LIMIT ?",
-                    (subject, now, int(limit)),
-                ).fetchall()
+                sql = ("SELECT * FROM l2_facts WHERE status='active' AND subject=?"
+                       " AND (expires_at = 0 OR expires_at > ?)")
+                args: tuple = (subject, now)
+                if not q:
+                    sql += " ORDER BY confidence DESC, stability DESC, updated_at DESC LIMIT ?"
+                    args = (subject, now, lim)
+                rows = self._db.execute(sql, args).fetchall()
             else:
-                rows = self._db.execute(
-                    "SELECT * FROM l2_facts WHERE status='active'"
-                    " AND (expires_at = 0 OR expires_at > ?)"
-                    " ORDER BY confidence DESC, stability DESC, updated_at DESC LIMIT ?",
-                    (now, int(limit)),
-                ).fetchall()
-        return [dict(r) for r in rows]
+                sql = ("SELECT * FROM l2_facts WHERE status='active'"
+                       " AND (expires_at = 0 OR expires_at > ?)")
+                args = (now,)
+                if not q:
+                    sql += " ORDER BY confidence DESC, stability DESC, updated_at DESC LIMIT ?"
+                    args = (now, lim)
+                rows = self._db.execute(sql, args).fetchall()
+        out = [dict(r) for r in rows]
+        if not q:
+            return out
+        # 不做任何「先截 N 条再排序」的保护：按时间或置信度预截断都会重新
+        # 把老而相关的事实挡在门外。limit 只是「返回条数」，由调用方的
+        # pack_l2_candidate_limit 控制；这个量级的 L2 全量 bigram 打分 <2ms。
+        qg = _bigrams(q)
+        if not qg:
+            out.sort(key=lambda r: (float(r.get("confidence") or 0),
+                                    int(r.get("stability") or 0)), reverse=True)
+            return out[:lim]
+        scored = [(len(qg & _bigrams(_l2_text(r))), r) for r in out]
+        scored.sort(key=lambda x: (-x[0], -float(x[1].get("confidence") or 0),
+                                   -int(x[1].get("stability") or 0),
+                                   -float(x[1].get("updated_at") or 0)))
+        return [r for _, r in scored[:lim]]
 
     def get_l2(self, fact_id: int) -> dict | None:
         with self._lock:
@@ -3661,7 +3710,7 @@ class SugarStore:
                      session_id: str = "", total: int | None = None,
                      ts: float | None = None, arch_ver: str = "", inject_fp: str = "",
                      rebuilt: int = 0, freeze_rounds: int = 0, cfg_ver: str = "",
-                     rebuild_reason: str = "") -> int:
+                     rebuild_reason: str = "", prefix_sig: str = "") -> int:
         """记一条用量。source=actual 是 provider 报的真实 usage，estimate 是我们估的。
 
         arch_ver/inject_fp/rebuilt/freeze_rounds/cfg_ver/rebuild_reason 只对
@@ -3669,19 +3718,23 @@ class SugarStore:
         前缀、是不是刚重建过、为什么重建。
         注意 cached 是**整轮请求**的前缀缓存（框架 system + 历史 + 工具 schema），
         不等于「记忆块命中率」，只有把同 fp 连续轮与重建轮分开对比才有意义。
+
+        prefix_sig 是常驻底档（prefix 那几条 L2）单独的指纹：inject_fp 含本轮
+        话题尾部，换话题就变；判「冻结有没有生效」必须看 prefix_sig。
         """
         total = int(total if total is not None else (input + cached + output))
         with self._lock, self._db:
             cur = self._db.execute(
                 "INSERT INTO token_usage (ts, module, source, provider_id, subject, session_id,"
                 " input, cached, output, total, arch_ver, inject_fp, rebuilt, freeze_rounds,"
-                " cfg_ver, rebuild_reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                " cfg_ver, rebuild_reason, prefix_sig) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (float(ts or time.time()), str(module or "other")[:32], str(source or "actual")[:16],
                  str(provider_id or "")[:64], str(subject or "")[:40], str(session_id or "")[:120],
                  int(input or 0), int(cached or 0), int(output or 0), max(0, total),
                  str(arch_ver or "")[:16], str(inject_fp or "")[:32],
                  1 if rebuilt else 0, max(0, int(freeze_rounds or 0)),
-                 str(cfg_ver or "")[:32], str(rebuild_reason or "")[:24]),
+                 str(cfg_ver or "")[:32], str(rebuild_reason or "")[:24],
+                 str(prefix_sig or "")[:32]),
             )
             return int(cur.lastrowid)
 
